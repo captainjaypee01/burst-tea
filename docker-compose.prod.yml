@@ -1,0 +1,43 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile.prod
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${MYSQL_DATABASE:-burst_tea}
+      DB_USERNAME: ${MYSQL_USER:-burst}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-secret}
+      REDIS_HOST: redis
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - burst
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile.prod
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost/api/v1}
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - burst
+
+  mysql:
+    restart: unless-stopped
+
+  redis:
+    restart: unless-stopped

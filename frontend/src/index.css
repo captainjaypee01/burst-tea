@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+/* Admin — single coherent light theme (high readability) */
+@theme {
+  --color-background: oklch(0.97 0.006 100);
+  --color-foreground: oklch(0.22 0.02 260);
+  --color-muted: oklch(0.45 0.02 260);
+  --color-muted-bg: oklch(0.94 0.008 100);
+  --color-border: oklch(0.88 0.015 220);
+  --color-card: oklch(1 0 0);
+  --color-card-border: oklch(0.9 0.01 220);
+  /* Sidebar: deep teal slate */
+  --color-sidebar: oklch(0.22 0.045 195);
+  --color-sidebar-foreground: oklch(0.97 0.01 200);
+  --color-sidebar-muted: oklch(0.68 0.04 195);
+  --color-sidebar-hover: oklch(0.3 0.05 195);
+  --color-sidebar-active: oklch(0.34 0.08 165);
+  /* Shadcn sidebar primitives (menu buttons, rails, outlines) */
+  --color-sidebar-accent: oklch(0.3 0.05 195);
+  --color-sidebar-accent-foreground: oklch(0.99 0.01 200);
+  --color-sidebar-border: oklch(0.35 0.04 195);
+  --color-sidebar-ring: oklch(0.52 0.14 165);
+  --color-accent: oklch(0.52 0.14 165);
+  --color-accent-hover: oklch(0.46 0.14 165);
+  --color-accent-foreground: oklch(0.99 0.01 165);
+  --color-ring: oklch(0.52 0.14 165);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+}
+
