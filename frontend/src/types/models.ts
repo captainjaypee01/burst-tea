@@ -49,3 +49,58 @@ export type Customer = {
   phone: string | null
   outstanding_balance_cents: number
 }
+
+export type CashRegister = {
+  id: number
+  name: string
+  is_active: boolean
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+export type Shift = {
+  id: number
+  user_id: number
+  closed_by_user_id: number | null
+  cash_register_id: number
+  status: string
+  name: string | null
+  opened_at: string | null
+  closed_at: string | null
+  opening_cash_cents: number
+  closing_cash_cents: number | null
+  user?: AuthUser
+  closed_by?: AuthUser
+  cash_register?: CashRegister
+}
+
+export type CashLedgerEntry = {
+  id: number
+  shift_id: number
+  type: string
+  amount_cents: number
+  reference_type: string | null
+  reference_id: number | null
+  notes: string | null
+  created_at: string | null
+}
+
+export type Expense = {
+  id: number
+  user_id: number | null
+  shift_id: number | null
+  category: string | null
+  description: string
+  amount_cents: number
+  created_at?: string | null
+}
+
+export type CashAdvance = {
+  id: number
+  user_id: number
+  shift_id: number | null
+  amount_cents: number
+  description: string | null
+  repaid_at?: string | null
+  created_at?: string | null
+}

@@ -15,10 +15,12 @@ class CashLedgerController extends Controller
     {
         $this->authorizePermission($request->user(), Permissions::CASH_READ);
 
+        $perPage = min(max($request->integer('per_page', 50), 1), 500);
+
         $paginator = CashLedgerEntry::query()
             ->where('shift_id', $shift->id)
             ->orderBy('id')
-            ->paginate($request->integer('per_page', 50));
+            ->paginate($perPage);
 
         return CashLedgerEntryResource::collection($paginator);
     }

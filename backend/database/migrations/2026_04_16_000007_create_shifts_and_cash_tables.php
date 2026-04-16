@@ -8,9 +8,18 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::create('cash_registers', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->boolean('is_active')->default(true)->index();
+            $table->timestamps();
+        });
+
         Schema::create('shifts', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('closed_by_user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('cash_register_id')->constrained('cash_registers')->cascadeOnDelete();
             $table->string('status')->index();
             $table->string('name')->nullable();
             $table->timestamp('opened_at')->nullable();
@@ -36,5 +45,6 @@ return new class extends Migration
     {
         Schema::dropIfExists('cash_ledger');
         Schema::dropIfExists('shifts');
+        Schema::dropIfExists('cash_registers');
     }
 };

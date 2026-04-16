@@ -14,6 +14,8 @@ class Shift extends Model
      */
     protected $fillable = [
         'user_id',
+        'closed_by_user_id',
+        'cash_register_id',
         'status',
         'name',
         'opened_at',
@@ -42,6 +44,22 @@ class Shift extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function closedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'closed_by_user_id');
+    }
+
+    /**
+     * @return BelongsTo<CashRegister, $this>
+     */
+    public function cashRegister(): BelongsTo
+    {
+        return $this->belongsTo(CashRegister::class);
     }
 
     /**

@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\Auth\LoginController;
 use App\Http\Controllers\Api\V1\Auth\LogoutController;
 use App\Http\Controllers\Api\V1\Auth\MeController;
 use App\Http\Controllers\Api\V1\CashAdvanceController;
+use App\Http\Controllers\Api\V1\CashRegisterController;
 use App\Http\Controllers\Api\V1\CashLedgerController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CreditLedgerController;
@@ -57,8 +58,14 @@ Route::middleware(['auth:sanctum', 'staff.active'])->group(function () {
     Route::apiResource('inventory-items', InventoryItemController::class)->whereNumber('inventory_item');
     Route::get('inventory-ledger', [InventoryLedgerController::class, 'index']);
 
+    Route::get('cash-registers/options', [CashRegisterController::class, 'options']);
+    Route::get('cash-registers/{cash_register}/shifts', [CashRegisterController::class, 'shifts'])->whereNumber('cash_register');
+    Route::apiResource('cash-registers', CashRegisterController::class)->whereNumber('cash_register');
+
     Route::post('shifts/open', [ShiftController::class, 'open']);
+    Route::get('shifts/current', [ShiftController::class, 'current']);
     Route::post('shifts/{shift}/close', [ShiftController::class, 'close'])->whereNumber('shift');
+    Route::post('shifts/{shift}/cash-adjustment', [ShiftController::class, 'recordCashAdjustment'])->whereNumber('shift');
 
     Route::get('shifts/{shift}/cash-ledger', [CashLedgerController::class, 'index'])->whereNumber('shift');
 

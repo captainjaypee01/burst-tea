@@ -62,6 +62,12 @@ final class Permissions
 
     public const CASH_READ = 'cash.read';
 
+    public const CASH_ADJUST = 'cash.adjust';
+
+    public const REGISTER_READ = 'register.read';
+
+    public const REGISTER_MANAGE = 'register.manage';
+
     public const EXPENSE_CREATE = 'expense.create';
 
     public const EXPENSE_READ = 'expense.read';
@@ -105,6 +111,9 @@ final class Permissions
             self::SHIFT_OPEN,
             self::SHIFT_CLOSE,
             self::CASH_READ,
+            self::CASH_ADJUST,
+            self::REGISTER_READ,
+            self::REGISTER_MANAGE,
             self::EXPENSE_CREATE,
             self::EXPENSE_READ,
             self::ADVANCE_CREATE,

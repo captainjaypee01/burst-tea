@@ -7,7 +7,7 @@ use App\Support\Permissions;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class OpenShiftRequest extends FormRequest
+class CurrentShiftRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -16,7 +16,7 @@ class OpenShiftRequest extends FormRequest
             return false;
         }
 
-        return $user->hasPermission(Permissions::SHIFT_OPEN)
+        return $user->hasPermission(Permissions::CASH_READ)
             && $user->hasPermission(Permissions::REGISTER_READ);
     }
 
@@ -31,7 +31,16 @@ class OpenShiftRequest extends FormRequest
                 'integer',
                 Rule::exists('cash_registers', 'id')->where('is_active', true),
             ],
-            'opening_cash_cents' => ['required', 'integer', 'min:0'],
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function validationData(): array
+    {
+        return array_merge($this->all(), [
+            'cash_register_id' => $this->query('cash_register_id'),
+        ]);
     }
 }

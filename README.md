@@ -44,32 +44,38 @@ Use this as the baseline before adding new modules.
 
 - **Auth:** Login page; session/token via Zustand [`frontend/src/stores/authStore.ts`](frontend/src/stores/authStore.ts); API wrapper [`frontend/src/lib/api-client.ts`](frontend/src/lib/api-client.ts).
 - **Shell:** [`AdminLayout`](frontend/src/components/layout/AdminLayout.tsx) with **shadcn-style Sidebar** (collapsible, mobile sheet).
-- **Routes:** `/login`, `/dashboard`, `/orders`, `/products` — see [`frontend/src/App.tsx`](frontend/src/App.tsx).
+- **Routes:** `/login`, `/dashboard`, `/orders`, `/products`, `/shifts/session`, `/cash-registers`, `/cash-registers/:cashRegisterId/ledger-history` — see [`frontend/src/App.tsx`](frontend/src/App.tsx).
 - **Data access:** Hooks + `src/api/*` modules for **auth**, **orders**, **products**, **customers** (customers API present; dedicated staff UI may not exist yet).
 - **Lists:** Server-paginated **Orders** and **Products** using shared [`DataTableServer`](frontend/src/components/DataTableServer.tsx) + TanStack Table.
+- **Shifts & cash:** Shift session, cash registers, register **ledger history** page (see [`docs/modules/shifts-and-session.md`](docs/modules/shifts-and-session.md)).
 
 ### Not implemented in the SPA yet (typical next work)
 
-Full UI and flows for **shifts/sessions**, **POS composer** (editing carts as staff), **payments** in the UI, **customers/credit**, **inventory/recipes**, **expenses/cash advances**, **user administration**, rich **dashboard KPIs**, etc. Many of these already have **API** endpoints; the gap is mostly **product UI**, rules wiring, and polish.
+- **Catalog admin (next priority):** full **CRUD** for **categories**, **products**, and **variants** (staff UI; APIs exist). Planned spec: [`docs/modules/catalog.md`](docs/modules/catalog.md).
+- **POS / ordering composer:** edit carts, line items, checkout & **payments** tied to shifts — after catalog is usable.
+- **Inventory:** **stock records** (items, ledger, adjustments) — **operational tracking** (e.g. “do we still have patties?”); **not** a hard prerequisite to **ordering** unless you later add **stock enforcement** at checkout.
+- **Customers & credit**, **user administration**, rich **dashboard KPIs**, **recipes** UI bridging variants to ingredients, etc. Many areas already have **API** endpoints; gaps are **product UI** and wiring.
 
 ---
 
 ## Module roadmap (recommended order)
 
-Order balances **operational dependencies** (day-open → sales → money → stock → admin):
+This order matches **burst-tea** today: **catalog before ordering**, **inventory as its own operational track** (not blocking sales unless you choose to enforce stock later).
 
 | Phase | Module | Why this order |
 |------|--------|----------------|
-| 1 | **Shifts & cash session** | Anchor the business day; cash ledger reads are shift-scoped. |
-| 2 | **POS order builder** | Create/edit orders, line items, checkout & payment — core revenue path. |
-| 3 | **Customers & credit** | Attach customers to orders; credit ledger reads/writes in UI. |
-| 4 | **Inventory & recipes** | Stock levels, movements, align recipes with variants. |
-| 5 | **Expenses & cash advances** | Close the loop on cash in drawer vs payouts. |
-| 6 | **Catalog admin** | Categories/modifiers/variants/recipes beyond list-only screens. |
-| 7 | **Users & permissions** | Staff CRUD aligned with Spatie roles (API exists). |
-| 8 | **Dashboard & reports** | KPIs, exports — after events exist in earlier modules. |
+| 1 | **Shifts & cash session** | Business day anchor; cash ledger shift-scoped. **Implemented** in SPA (see spec). |
+| 2 | **Catalog** — categories, products, variants (+ modifiers/recipes as needed) | **Sellable menu** and prices; required so **ordering** can show real items. **Next:** staff CRUD beyond list-only — [`docs/modules/catalog.md`](docs/modules/catalog.md). |
+| 3 | **POS / order builder** | Create/edit orders, line items, checkout & payment — uses **catalog** + **shifts**. |
+| 4 | **Customers & credit** | Attach customers; credit ledger in UI. |
+| 5 | **Inventory** — items, ledger, movements | **Stock records** for ingredients/supplies; optional **recipe** links from variants. **Independent** of “can we take an order” — ordering does not require inventory to exist first. |
+| 6 | **Expenses & cash advances** (extended admin) | Broader than shift session shortcuts if needed. |
+| 7 | **Users & permissions** | Staff CRUD (API exists). |
+| 8 | **Dashboard & reports** | KPIs after events exist. |
 
-Adjust if your go-live priority is different (e.g. catalog before POS). Each slice should get its own **filled module spec** (template below) before implementation.
+**Inventory vs ordering:** Treat inventory as **what you have on hand** (record-keeping, alerts, future optional **deduction** when a sale completes). **Ordering** needs **catalog**, not inventory, unless you explicitly build **block sale when out of stock**.
+
+Each slice should get a **filled module spec** under [`docs/modules/`](docs/modules/) (template: [`docs/MODULE_SPEC_TEMPLATE.md`](docs/MODULE_SPEC_TEMPLATE.md)) before implementation.
 
 ---
 

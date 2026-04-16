@@ -102,17 +102,33 @@ class PostPaymentAction
         }
 
         if ($dto->shiftId !== null) {
-            return Shift::query()->findOrFail($dto->shiftId);
+            /** @var Shift $shift */
+            $shift = Shift::query()->whereKey($dto->shiftId)->firstOrFail();
+            if ($shift->status !== ShiftStatus::Open) {
+                throw ValidationException::withMessages([
+                    'shift_id' => ['The selected shift is not open.'],
+                ]);
+            }
+
+            return $shift;
         }
 
-        /** @var Shift|null $open */
-        $open = Shift::query()->where('status', ShiftStatus::Open)->first();
-        if ($open === null) {
+        $openShifts = Shift::query()->where('status', ShiftStatus::Open)->get();
+        if ($openShifts->isEmpty()) {
             throw ValidationException::withMessages([
                 'shift_id' => ['An open shift is required for cash or e-wallet payments.'],
             ]);
         }
 
-        return $open;
+        if ($openShifts->count() > 1) {
+            throw ValidationException::withMessages([
+                'shift_id' => ['shift_id is required when more than one shift is open.'],
+            ]);
+        }
+
+        /** @var Shift $only */
+        $only = $openShifts->first();
+
+        return $only;
     }
 }

@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, ShoppingCart } from 'lucide-react'
+import { Landmark, LayoutDashboard, Package, ShoppingCart, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 export type NavItem = {
@@ -26,5 +26,17 @@ export const staffNavItems: NavItem[] = [
     label: 'Products',
     description: 'Catalog & variants',
     icon: Package,
+  },
+  {
+    to: '/shifts/session',
+    label: 'Shift Session',
+    description: 'Open, close, cash ledger',
+    icon: Wallet,
+  },
+  {
+    to: '/cash-registers',
+    label: 'Cash registers',
+    description: 'Drawers & terminals',
+    icon: Landmark,
   },
 ]

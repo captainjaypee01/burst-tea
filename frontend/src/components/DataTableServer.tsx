@@ -25,16 +25,18 @@ export function DataTableServer<T>({
   isLoading,
   onPageChange,
 }: DataTableServerProps<T>): ReactElement {
+  const lastPage = Math.max(meta?.last_page ?? 1, 1)
+
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
-    pageCount: meta?.last_page ?? 0,
+    pageCount: lastPage,
   })
 
   const current = meta?.current_page ?? 1
-  const last = meta?.last_page ?? 1
+  const last = lastPage
 
   return (
     <div className="w-full space-y-4">

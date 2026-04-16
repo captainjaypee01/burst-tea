@@ -6,6 +6,7 @@ use App\Enums\CashLedgerType;
 use App\Models\CashLedgerEntry;
 use App\Models\Order;
 use App\Models\Shift;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class CashDrawerService
@@ -53,5 +54,23 @@ class CashDrawerService
             ]);
             $entry->save();
         });
+    }
+
+    public function recordCountAdjustment(Shift $shift, User $actor, int $deltaCents, string $reason): void
+    {
+        $entry = new CashLedgerEntry([
+            'shift_id' => $shift->id,
+            'type' => CashLedgerType::Adjustment,
+            'amount_cents' => $deltaCents,
+            'reference_type' => User::class,
+            'reference_id' => $actor->id,
+            'notes' => sprintf(
+                '%s (recorded by %s #%d)',
+                $reason,
+                $actor->name,
+                $actor->id,
+            ),
+        ]);
+        $entry->save();
     }
 }
