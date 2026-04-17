@@ -5,6 +5,7 @@ namespace App\Http\Requests\Api\V1\Users;
 use App\Models\User;
 use App\Support\Permissions;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreUserRequest extends FormRequest
 {
@@ -25,7 +26,7 @@ class StoreUserRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->whereNull('deleted_at')],
             'password' => ['required', 'string', 'min:8'],
             'pin_hash' => ['nullable', 'string'],
             'is_active' => ['sometimes', 'boolean'],

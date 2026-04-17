@@ -21,6 +21,7 @@ class ProductResource extends JsonResource
             'name' => $this->name,
             'description' => $this->description,
             'is_active' => $this->is_active,
+            'category' => CategoryResource::make($this->whenLoaded('category')),
             'variants' => ProductVariantResource::collection($this->whenLoaded('variants')),
             'modifiers' => ModifierResource::collection($this->whenLoaded('modifiers')),
             'created_at' => $this->created_at?->toIso8601String(),

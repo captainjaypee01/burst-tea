@@ -5,6 +5,7 @@ namespace App\Http\Requests\Api\V1\CashAdvances;
 use App\Models\User;
 use App\Support\Permissions;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreCashAdvanceRequest extends FormRequest
 {
@@ -24,7 +25,7 @@ class StoreCashAdvanceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'user_id' => ['required', 'integer', Rule::exists('users', 'id')->whereNull('deleted_at')],
             'shift_id' => ['nullable', 'integer', 'exists:shifts,id'],
             'amount_cents' => ['required', 'integer', 'min:1'],
             'description' => ['nullable', 'string', 'max:255'],

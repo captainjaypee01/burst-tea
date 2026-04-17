@@ -1,4 +1,4 @@
-import { Landmark, LayoutDashboard, Package, ShoppingCart, Wallet } from 'lucide-react'
+import { FolderTree, Landmark, LayoutDashboard, Package, ShoppingCart, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 export type NavItem = {
@@ -20,6 +20,12 @@ export const staffNavItems: NavItem[] = [
     label: 'Orders',
     description: 'POS orders & payments',
     icon: ShoppingCart,
+  },
+  {
+    to: '/categories',
+    label: 'Categories',
+    description: 'Menu groupings',
+    icon: FolderTree,
   },
   {
     to: '/products',

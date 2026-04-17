@@ -32,7 +32,7 @@ class UpdateUserRequest extends FormRequest
 
         return [
             'name' => ['sometimes', 'string', 'max:255'],
-            'email' => ['sometimes', 'email', 'max:255', Rule::unique('users', 'email')->ignore($target->id)],
+            'email' => ['sometimes', 'email', 'max:255', Rule::unique('users', 'email')->ignore($target->id)->whereNull('deleted_at')],
             'password' => ['sometimes', 'string', 'min:8'],
             'pin_hash' => ['nullable', 'string'],
             'is_active' => ['sometimes', 'boolean'],

@@ -10,17 +10,18 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Support\Permissions;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
-    public function options(Request $request): \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+    public function options(Request $request): AnonymousResourceCollection
     {
         $this->authorizePermission($request->user(), Permissions::PRODUCT_READ);
 
         $products = Product::query()
-            ->with('variants')
+            ->with(['variants', 'category'])
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
@@ -28,14 +29,25 @@ class ProductController extends Controller
         return ProductResource::collection($products);
     }
 
-    public function index(Request $request): \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+    public function index(Request $request): AnonymousResourceCollection
     {
         $this->authorizePermission($request->user(), Permissions::PRODUCT_READ);
 
-        $paginator = Product::query()
-            ->with(['variants', 'modifiers'])
-            ->orderBy('name')
-            ->paginate($request->integer('per_page', 15));
+        $validated = $request->validate([
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'category_id' => ['sometimes', 'integer', 'exists:categories,id'],
+        ]);
+
+        $query = Product::query()
+            ->with(['variants', 'modifiers', 'category'])
+            ->orderBy('name');
+
+        if (isset($validated['category_id'])) {
+            $query->where('category_id', $validated['category_id']);
+        }
+
+        $perPage = $validated['per_page'] ?? $request->integer('per_page', 15);
+        $paginator = $query->paginate($perPage);
 
         return ProductResource::collection($paginator);
     }
@@ -67,7 +79,7 @@ class ProductController extends Controller
                 ]);
             }
 
-            return $product->fresh(['variants', 'modifiers']);
+            return $product->fresh(['variants', 'modifiers', 'category']);
         });
 
         return new ProductResource($product);
@@ -77,7 +89,7 @@ class ProductController extends Controller
     {
         $this->authorizePermission($request->user(), Permissions::PRODUCT_READ);
 
-        return new ProductResource($product->load(['variants', 'modifiers']));
+        return new ProductResource($product->load(['variants', 'modifiers', 'category']));
     }
 
     public function update(UpdateProductRequest $request, Product $product): ProductResource
@@ -91,7 +103,7 @@ class ProductController extends Controller
             $product->modifiers()->sync($ids);
         }
 
-        return new ProductResource($product->fresh(['variants', 'modifiers']));
+        return new ProductResource($product->fresh(['variants', 'modifiers', 'category']));
     }
 
     public function destroy(Request $request, Product $product): Response

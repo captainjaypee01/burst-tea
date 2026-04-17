@@ -5,6 +5,7 @@ namespace App\Http\Requests\Api\V1\Products;
 use App\Models\User;
 use App\Support\Permissions;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateProductRequest extends FormRequest
 {
@@ -24,12 +25,12 @@ class UpdateProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'category_id' => ['sometimes', 'nullable', 'integer', 'exists:categories,id'],
+            'category_id' => ['sometimes', 'nullable', 'integer', Rule::exists('categories', 'id')->whereNull('deleted_at')],
             'name' => ['sometimes', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'is_active' => ['sometimes', 'boolean'],
             'modifier_ids' => ['sometimes', 'array'],
-            'modifier_ids.*' => ['integer', 'exists:modifiers,id'],
+            'modifier_ids.*' => ['integer', Rule::exists('modifiers', 'id')->whereNull('deleted_at')],
         ];
     }
 }

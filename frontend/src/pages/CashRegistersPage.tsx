@@ -281,3 +281,5 @@ export function CashRegistersPage(): ReactElement {
     </div>
   )
 }
+
+export default CashRegistersPage

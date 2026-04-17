@@ -5,6 +5,7 @@ namespace App\Http\Requests\Api\V1\Orders;
 use App\Models\User;
 use App\Support\Permissions;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreOrderRequest extends FormRequest
 {
@@ -24,12 +25,12 @@ class StoreOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
+            'customer_id' => ['nullable', 'integer', Rule::exists('customers', 'id')->whereNull('deleted_at')],
             'items' => ['required', 'array', 'min:1'],
-            'items.*.product_variant_id' => ['required', 'integer', 'exists:product_variants,id'],
+            'items.*.product_variant_id' => ['required', 'integer', Rule::exists('product_variants', 'id')->whereNull('deleted_at')],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.modifier_ids' => ['sometimes', 'array'],
-            'items.*.modifier_ids.*' => ['integer', 'exists:modifiers,id'],
+            'items.*.modifier_ids.*' => ['integer', Rule::exists('modifiers', 'id')->whereNull('deleted_at')],
         ];
     }
 }

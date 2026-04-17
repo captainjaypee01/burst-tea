@@ -18,6 +18,10 @@ export type PaginatedResponse<T> = {
   links: PaginatedLinks
 }
 
+export type ApiEnvelope<T> = {
+  data: T
+}
+
 export type ApiErrorBody = {
   message: string
   errors?: Record<string, string[]>

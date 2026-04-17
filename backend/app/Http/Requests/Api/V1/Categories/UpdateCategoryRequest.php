@@ -29,7 +29,7 @@ class UpdateCategoryRequest extends FormRequest
 
         return [
             'name' => ['sometimes', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', Rule::unique('categories', 'slug')->ignore($category->id)],
+            'slug' => ['nullable', 'string', 'max:255', Rule::unique('categories', 'slug')->ignore($category->id)->whereNull('deleted_at')],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
             'is_active' => ['sometimes', 'boolean'],
         ];

@@ -56,3 +56,5 @@ export function OrdersPage(): ReactElement {
     </div>
   )
 }
+
+export default OrdersPage

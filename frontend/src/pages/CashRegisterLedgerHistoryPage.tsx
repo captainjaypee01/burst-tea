@@ -282,3 +282,5 @@ export function CashRegisterLedgerHistoryPage(): ReactElement {
     </div>
   )
 }
+
+export default CashRegisterLedgerHistoryPage

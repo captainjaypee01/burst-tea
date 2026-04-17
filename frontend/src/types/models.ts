@@ -11,6 +11,14 @@ export type AuthUser = {
   permissions?: string[]
 }
 
+export type Category = {
+  id: number
+  name: string
+  slug: string | null
+  sort_order: number
+  is_active: boolean
+}
+
 export type ProductVariant = {
   id: number
   product_id: number
@@ -26,6 +34,7 @@ export type Product = {
   name: string
   description: string | null
   is_active: boolean
+  category?: Category | null
   variants?: ProductVariant[]
 }
 

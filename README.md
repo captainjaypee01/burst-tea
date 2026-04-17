@@ -44,17 +44,17 @@ Use this as the baseline before adding new modules.
 
 - **Auth:** Login page; session/token via Zustand [`frontend/src/stores/authStore.ts`](frontend/src/stores/authStore.ts); API wrapper [`frontend/src/lib/api-client.ts`](frontend/src/lib/api-client.ts).
 - **Shell:** [`AdminLayout`](frontend/src/components/layout/AdminLayout.tsx) with **shadcn-style Sidebar** (collapsible, mobile sheet).
-- **Routes:** `/login`, `/dashboard`, `/orders`, `/products`, `/shifts/session`, `/cash-registers`, `/cash-registers/:cashRegisterId/ledger-history` — see [`frontend/src/App.tsx`](frontend/src/App.tsx).
-- **Data access:** Hooks + `src/api/*` modules for **auth**, **orders**, **products**, **customers** (customers API present; dedicated staff UI may not exist yet).
+- **Routes:** `/login`, `/dashboard`, `/orders`, `/categories`, `/categories/:categoryId`, `/products`, `/products/:productId`, `/shifts/session`, `/cash-registers`, `/cash-registers/:cashRegisterId/ledger-history` — defined in [`frontend/src/routes/AppRoutes.tsx`](frontend/src/routes/AppRoutes.tsx); [`App.tsx`](frontend/src/App.tsx) renders `<AppRoutes />` only.
+- **Data access:** Hooks + `src/api/*` modules for **auth**, **orders**, **products**, **categories**, **customers** (customers API present; dedicated staff UI may not exist yet).
 - **Lists:** Server-paginated **Orders** and **Products** using shared [`DataTableServer`](frontend/src/components/DataTableServer.tsx) + TanStack Table.
+- **Catalog:** **Categories**, **Products** list, **product detail** (`/products/:productId`) — create product with embedded variants, edit variants, soft-delete; spec [`docs/modules/catalog.md`](docs/modules/catalog.md).
 - **Shifts & cash:** Shift session, cash registers, register **ledger history** page (see [`docs/modules/shifts-and-session.md`](docs/modules/shifts-and-session.md)).
 
 ### Not implemented in the SPA yet (typical next work)
 
-- **Catalog admin (next priority):** full **CRUD** for **categories**, **products**, and **variants** (staff UI; APIs exist). Planned spec: [`docs/modules/catalog.md`](docs/modules/catalog.md).
-- **POS / ordering composer:** edit carts, line items, checkout & **payments** tied to shifts — after catalog is usable.
+- **POS / ordering composer:** edit carts, **line notes**, line items, **checkout review page**, checkout & **payments** tied to shifts — **spec** [`docs/modules/ordering.md`](docs/modules/ordering.md) (tabs, **cards** + variants, cart, then **Pay** with **Cash** / **Maya** / **GCash** manual; **no** wallet API).
 - **Inventory:** **stock records** (items, ledger, adjustments) — **operational tracking** (e.g. “do we still have patties?”); **not** a hard prerequisite to **ordering** unless you later add **stock enforcement** at checkout.
-- **Customers & credit**, **user administration**, rich **dashboard KPIs**, **recipes** UI bridging variants to ingredients, etc. Many areas already have **API** endpoints; gaps are **product UI** and wiring.
+- **Customers & credit**, **user administration**, rich **dashboard KPIs**, **recipes** UI bridging variants to ingredients, etc. Many areas already have **API** endpoints; gaps are mostly **staff UI** wiring.
 
 ---
 
@@ -65,8 +65,8 @@ This order matches **burst-tea** today: **catalog before ordering**, **inventory
 | Phase | Module | Why this order |
 |------|--------|----------------|
 | 1 | **Shifts & cash session** | Business day anchor; cash ledger shift-scoped. **Implemented** in SPA (see spec). |
-| 2 | **Catalog** — categories, products, variants (+ modifiers/recipes as needed) | **Sellable menu** and prices; required so **ordering** can show real items. **Next:** staff CRUD beyond list-only — [`docs/modules/catalog.md`](docs/modules/catalog.md). |
-| 3 | **POS / order builder** | Create/edit orders, line items, checkout & payment — uses **catalog** + **shifts**. |
+| 2 | **Catalog** — categories, products, variants (+ modifiers/recipes as needed) | **Sellable menu** and prices; **SPA CRUD** shipped — [`docs/modules/catalog.md`](docs/modules/catalog.md). |
+| 3 | **POS / order builder** | Create/edit orders, line items, checkout & payment — uses **catalog** + **shifts**. UX: [`docs/modules/ordering.md`](docs/modules/ordering.md). |
 | 4 | **Customers & credit** | Attach customers; credit ledger in UI. |
 | 5 | **Inventory** — items, ledger, movements | **Stock records** for ingredients/supplies; optional **recipe** links from variants. **Independent** of “can we take an order” — ordering does not require inventory to exist first. |
 | 6 | **Expenses & cash advances** (extended admin) | Broader than shift session shortcuts if needed. |
@@ -90,6 +90,8 @@ Read BLUEPRINT.md and docs/MODULE_SPEC_TEMPLATE.md. Create docs/modules/SPEC_FIL
 ```
 
 Follow the **Module spec agent**: [`.cursor/agents/module-spec.md`](.cursor/agents/module-spec.md).
+
+**Full pipeline (spec → backend → frontend → backend tests → frontend tests → code review) in one go:** open [`docs/prompts/module-delivery-workflow.md`](docs/prompts/module-delivery-workflow.md), copy the fenced prompt into a **new chat**, and **@ attach** `BLUEPRINT.md`, this file, [`docs/modules/catalog.md`](docs/modules/catalog.md) (dependency context), [`AGENTS.md`](AGENTS.md), and—when you start Phase 1—`docs/modules/ordering.md`. The workflow defaults to the **next** roadmap slice — **Ordering / POS** (phase 3). For catalog-only work, follow “Notes for humans” in that doc and point the **Module identity** block at `docs/modules/catalog.md`.
 
 ### B — Backend for an approved spec
 

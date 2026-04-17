@@ -5,8 +5,10 @@ Use the specialized instructions in [`.cursor/agents/`](.cursor/agents/) when wo
 | Role | File | Remit |
 |------|------|--------|
 | Backend | [backend.md](.cursor/agents/backend.md) | Laravel API, migrations, Actions/Services, permissions, transactions |
-| Frontend | [frontend.md](.cursor/agents/frontend.md) | React, hooks-only data access, Zustand auth, shadcn/ui |
-| Tester | [tester.md](.cursor/agents/tester.md) | PHPUnit/Pest, `/api/v1` feature tests, CI-friendly commands |
+| Frontend | [frontend.md](.cursor/agents/frontend.md) | React, hooks-only data access, Zustand auth, **shadcn/ui** (`components/ui`, `shadcn add`) |
+| Tester (umbrella) | [tester.md](.cursor/agents/tester.md) | Points to backend vs frontend testers |
+| Tester — Backend | [tester-backend.md](.cursor/agents/tester-backend.md) | Pest/PHPUnit feature tests for `/api/v1`, permissions, JSON shapes |
+| Tester — Frontend | [tester-frontend.md](.cursor/agents/tester-frontend.md) | Vitest/RTL/E2E for SPA; UI/hook coverage |
 | Code Reviewer | [code-reviewer.md](.cursor/agents/code-reviewer.md) | SOLID, security, thin controllers, consistency with BLUEPRINT |
 | Module spec | [module-spec.md](.cursor/agents/module-spec.md) | Fill `docs/modules/<name>.md` from [MODULE_SPEC_TEMPLATE.md](docs/MODULE_SPEC_TEMPLATE.md) before a new slice |
 

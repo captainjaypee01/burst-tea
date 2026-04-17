@@ -29,7 +29,7 @@ class CurrentShiftRequest extends FormRequest
             'cash_register_id' => [
                 'required',
                 'integer',
-                Rule::exists('cash_registers', 'id')->where('is_active', true),
+                Rule::exists('cash_registers', 'id')->where('is_active', true)->whereNull('deleted_at'),
             ],
         ];
     }

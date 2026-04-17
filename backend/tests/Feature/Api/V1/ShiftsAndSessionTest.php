@@ -9,11 +9,6 @@ use App\Models\User;
 use App\Support\Permissions;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\PermissionRegistrar;
-
-beforeEach(function (): void {
-    app(PermissionRegistrar::class)->forgetCachedPermissions();
-});
 
 function makeCashRegister(string $name = 'Register A'): CashRegister
 {
@@ -161,24 +156,6 @@ it('rejects opening when another shift is already open on the same register', fu
     ])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['shift']);
-});
-
-it('allows concurrent open shifts on different registers', function (): void {
-    $r1 = makeCashRegister('R1');
-    $r2 = makeCashRegister('R2');
-    authenticateWithPermissions([Permissions::SHIFT_OPEN, Permissions::REGISTER_READ]);
-
-    $this->postJson('/api/v1/shifts/open', [
-        'cash_register_id' => $r1->id,
-        'opening_cash_cents' => 100,
-    ])->assertOk();
-
-    $this->postJson('/api/v1/shifts/open', [
-        'cash_register_id' => $r2->id,
-        'opening_cash_cents' => 200,
-    ])->assertOk();
-
-    expect(Shift::query()->where('status', ShiftStatus::Open)->count())->toBe(2);
 });
 
 it('rejects opening a second register while the same user has an open shift elsewhere', function (): void {
@@ -373,7 +350,7 @@ it('allows managers to manage cash registers', function (): void {
     authenticateWithPermissions([Permissions::REGISTER_MANAGE, Permissions::REGISTER_READ]);
 
     $this->postJson('/api/v1/cash-registers', ['name' => 'Custom lane'])
-        ->assertOk()
+        ->assertCreated()
         ->assertJsonPath('data.name', 'Custom lane');
 
     $this->getJson('/api/v1/cash-registers/options')->assertOk();

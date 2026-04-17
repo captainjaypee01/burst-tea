@@ -2,21 +2,22 @@
 
 ## Scope
 
-Automated tests for the Laravel API and, optionally, frontend E2E.
+Umbrella pointer: use the **split** agents for focused work:
 
-## Backend
+| Focus | File |
+|-------|------|
+| Laravel API (`/api/v1`) feature tests | [tester-backend.md](tester-backend.md) |
+| React SPA (Vitest/RTL/E2E) | [tester-frontend.md](tester-frontend.md) |
+
+## Backend (summary)
 
 - Prefer **Pest** or **PHPUnit** feature tests hitting `/api/v1/...` with `RefreshDatabase`.
 - Seed or factory minimal roles/permissions so `hasPermission` passes where required.
 - Assert JSON shape: pagination (`data`, `meta`, `links`), validation errors (`message`, `errors`).
 
-## Commands (from host or `backend` container)
+## Frontend (summary)
 
-- `php artisan test` or `./vendor/bin/pest`
-
-## Frontend (optional)
-
-- Playwright/Cypress against dev URL — keep smoke tests small.
+- Component/hook tests or small E2E smoke — see **tester-frontend.md**.
 
 ## Documentation
 

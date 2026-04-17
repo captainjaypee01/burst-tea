@@ -77,14 +77,14 @@ export function useShiftSession(cashRegisterId: number | null): {
   )
 
   const recordAdjustment = useCallback(
-    async (deltaCents: number, reason: string) => {
+    async (deltaCents: number, reason?: string) => {
       if (!shift) {
         return
       }
       setLoading(true)
       setError(null)
       try {
-        await shiftsApi.recordShiftCashAdjustment(shift.id, deltaCents, reason)
+        await shiftsApi.recordShiftCashAdjustment(shift.id, deltaCents, reason ?? '')
         await load()
       } catch (err) {
         setError(getApiErrorMessage(err))

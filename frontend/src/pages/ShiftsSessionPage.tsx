@@ -542,3 +542,5 @@ export function ShiftsSessionPage(): ReactElement {
     </div>
   )
 }
+
+export default ShiftsSessionPage

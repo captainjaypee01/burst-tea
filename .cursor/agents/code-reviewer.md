@@ -14,6 +14,7 @@
 - [ ] No raw Axios in components for domain data (hooks + `api/` modules).
 - [ ] Auth only in Zustand; token attached via client interceptor.
 - [ ] Types for API responses; no unnecessary `any`.
+- [ ] **shadcn/ui:** New UI uses `@/components/ui/*` primitives; no ad-hoc styled `<button>`/`<input>`/modals where a shadcn component exists or should be added (`npx shadcn@latest add …`). See `.cursor/agents/frontend.md`.
 
 ## Checklist — Security
 

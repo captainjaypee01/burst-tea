@@ -154,3 +154,5 @@ export function LoginPage(): ReactElement {
     </div>
   )
 }
+
+export default LoginPage
