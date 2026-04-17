@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\EWalletProvider;
 use App\Enums\PaymentMethod;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,9 +15,11 @@ class Payment extends Model
     protected $fillable = [
         'order_id',
         'user_id',
+        'shift_id',
         'method',
         'amount_cents',
         'reference',
+        'e_wallet_provider',
     ];
 
     /**
@@ -27,6 +30,7 @@ class Payment extends Model
         return [
             'method' => PaymentMethod::class,
             'amount_cents' => 'integer',
+            'e_wallet_provider' => EWalletProvider::class,
         ];
     }
 
@@ -44,5 +48,13 @@ class Payment extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return BelongsTo<Shift, $this>
+     */
+    public function shift(): BelongsTo
+    {
+        return $this->belongsTo(Shift::class);
     }
 }

@@ -10,6 +10,9 @@ import { RouteLoadingFallback } from '@/components/layout/RouteLoadingFallback'
 const LoginPage = lazy(() => import('@/pages/LoginPage'))
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
 const OrdersPage = lazy(() => import('@/pages/OrdersPage'))
+const OrderComposerPage = lazy(() => import('@/pages/OrderComposerPage'))
+const OrderCheckoutPage = lazy(() => import('@/pages/OrderCheckoutPage'))
+const OrderDetailPage = lazy(() => import('@/pages/OrderDetailPage'))
 const CategoriesPage = lazy(() => import('@/pages/CategoriesPage'))
 const CategoryDetailPage = lazy(() => import('@/pages/CategoryDetailPage'))
 const ProductsPage = lazy(() => import('@/pages/ProductsPage'))
@@ -36,6 +39,10 @@ export function AppRoutes(): ReactElement {
           <Route element={<AdminLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/orders" element={<OrdersPage />} />
+            <Route path="/pos/new" element={<OrderComposerPage />} />
+            <Route path="/pos/:orderId/compose" element={<OrderComposerPage />} />
+            <Route path="/pos/:orderId/checkout" element={<OrderCheckoutPage />} />
+            <Route path="/orders/:orderId" element={<OrderDetailPage />} />
             <Route path="/categories" element={<CategoriesPage />} />
             <Route path="/categories/:categoryId" element={<CategoryDetailPage />} />
             <Route path="/products" element={<ProductsPage />} />

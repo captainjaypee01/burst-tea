@@ -3,6 +3,7 @@
 namespace App\Actions\Payments;
 
 use App\DTOs\Payments\PostPaymentDTO;
+use App\Enums\EWalletProvider;
 use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
@@ -57,12 +58,16 @@ class PostPaymentAction
 
             $shift = $this->resolveShiftForCash($dto);
 
+            $eWalletProvider = $dto->method === PaymentMethod::EWallet ? $dto->eWalletProvider : null;
+
             $payment = new Payment([
                 'order_id' => $order->id,
                 'user_id' => $user->id,
+                'shift_id' => in_array($dto->method, [PaymentMethod::Cash, PaymentMethod::EWallet], true) ? $shift?->id : null,
                 'method' => $dto->method,
                 'amount_cents' => $dto->amountCents,
-                'reference' => null,
+                'reference' => $dto->reference,
+                'e_wallet_provider' => $eWalletProvider,
             ]);
             $payment->save();
 
@@ -83,7 +88,7 @@ class PostPaymentAction
                     $shift !== null
                     && in_array($dto->method, [PaymentMethod::Cash, PaymentMethod::EWallet], true)
                 ) {
-                    $this->cashDrawerService->recordSale($shift, $order, $dto->amountCents);
+                    $this->cashDrawerService->recordSale($shift, $order, $dto->amountCents, $this->ledgerPaymentLabel($dto));
                 }
             } else {
                 $order->payment_status = OrderPaymentStatus::Partial;
@@ -130,5 +135,18 @@ class PostPaymentAction
         $only = $openShifts->first();
 
         return $only;
+    }
+
+    private function ledgerPaymentLabel(PostPaymentDTO $dto): string
+    {
+        return match ($dto->method) {
+            PaymentMethod::Cash => 'Cash',
+            PaymentMethod::EWallet => match ($dto->eWalletProvider) {
+                EWalletProvider::Maya => 'PayMaya',
+                EWalletProvider::Gcash => 'GCash',
+                null => 'E-wallet',
+            },
+            default => '',
+        };
     }
 }

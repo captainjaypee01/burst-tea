@@ -7,8 +7,10 @@ const ScrollArea = React.forwardRef<
   React.ComponentRef<typeof ScrollAreaPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>
 >(({ className, children, ...props }, ref) => (
-  <ScrollAreaPrimitive.Root ref={ref} className={cn('relative overflow-hidden', className)} {...props}>
-    <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit]">{children}</ScrollAreaPrimitive.Viewport>
+  <ScrollAreaPrimitive.Root ref={ref} className={cn('relative min-h-0 overflow-hidden', className)} {...props}>
+    <ScrollAreaPrimitive.Viewport className="h-full w-full min-h-0 rounded-[inherit]">
+      {children}
+    </ScrollAreaPrimitive.Viewport>
     <ScrollBar />
     <ScrollAreaPrimitive.Corner />
   </ScrollAreaPrimitive.Root>
@@ -23,14 +25,14 @@ const ScrollBar = React.forwardRef<
     ref={ref}
     orientation={orientation}
     className={cn(
-      'flex touch-none select-none transition-colors',
-      orientation === 'vertical' && 'h-full w-2.5 border-s border-border/40 p-px',
-      orientation === 'horizontal' && 'h-2.5 flex-col border-t border-border/40 p-px',
+      'flex touch-none select-none transition-opacity',
+      orientation === 'vertical' && 'h-full w-1.5 p-px',
+      orientation === 'horizontal' && 'h-1.5 w-full flex-col p-px',
       className,
     )}
     {...props}
   >
-    <ScrollAreaPrimitive.ScrollAreaThumb className="relative flex-1 rounded-full bg-[color-mix(in_oklab,var(--color-muted)_80%,var(--color-foreground))] opacity-70 hover:opacity-100" />
+    <ScrollAreaPrimitive.ScrollAreaThumb className="relative flex-1 rounded-full bg-foreground/22 hover:bg-foreground/35" />
   </ScrollAreaPrimitive.ScrollAreaScrollbar>
 ))
 ScrollBar.displayName = ScrollAreaPrimitive.ScrollAreaScrollbar.displayName

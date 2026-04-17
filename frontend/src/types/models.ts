@@ -26,6 +26,8 @@ export type ProductVariant = {
   price_cents: number
   sku: string | null
   is_active: boolean
+  /** Present when the API loads `variant.product` (e.g. order line items). */
+  product?: Product
 }
 
 export type Product = {
@@ -36,6 +38,29 @@ export type Product = {
   is_active: boolean
   category?: Category | null
   variants?: ProductVariant[]
+}
+
+export type OrderItem = {
+  id: number
+  product_variant_id: number
+  quantity: number
+  unit_price_cents: number
+  line_total_cents: number
+  notes: string | null
+  variant?: ProductVariant & { product?: Product }
+}
+
+export type OrderPayment = {
+  id: number
+  order_id: number
+  user_id: number | null
+  shift_id: number | null
+  method: string
+  amount_cents: number
+  reference: string | null
+  e_wallet_provider: string | null
+  created_at?: string | null
+  shift?: Shift & { cash_register?: CashRegister }
 }
 
 export type Order = {
@@ -50,6 +75,10 @@ export type Order = {
   total_cents: number
   amount_paid_cents: number
   is_credit: boolean
+  items?: OrderItem[]
+  payments?: OrderPayment[]
+  created_at?: string | null
+  updated_at?: string | null
 }
 
 export type Customer = {

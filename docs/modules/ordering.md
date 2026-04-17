@@ -1,8 +1,8 @@
 # Module: `ordering` (POS / order builder)
 
-**Status:** draft  
+**Status:** ready (SPA **implemented** — keep spec as regression reference)  
 **Owner / branch:** optional  
-**Last updated:** 2026-04-17  
+**Last updated:** 2026-04-18  
 
 ## 1. Problem & outcome
 
@@ -28,16 +28,15 @@ Superadmin bypasses permission checks per existing `Employee` / `User` helpers.
 - **Reuse first:** existing routes in [`backend/routes/api_v1.php`](../../backend/routes/api_v1.php):
   - `GET/POST /api/v1/orders`, `GET /api/v1/orders/{order}`
   - `POST /api/v1/orders/{order}/items`
+  - `PATCH /api/v1/orders/{order}/items/{order_item}` — update quantity / notes
+  - `DELETE /api/v1/orders/{order}/items/{order_item}` — remove line
   - `POST /api/v1/payments`
 - **Catalog read:** `GET /api/v1/categories`, `GET /api/v1/products` (with filters as needed), product resources including **variants** and prices — align with [`docs/modules/catalog.md`](catalog.md).
 - **Shifts / cash:** `GET /api/v1/shifts/current`, cash ledger semantics per `BLUEPRINT.md` and [`shifts-and-session.md`](shifts-and-session.md).
 - **Domain rules:** validate `product_variant_id` (active, non-deleted product/category), order state, payment amounts vs totals, `shift_id` when required — **server-side** in FormRequests + Actions/Services; use `DB::transaction()` for multi-step writes.
 - **Per-line notes:** `order_items` needs a nullable **`notes`** (text) column — **migration** + `OrderItem` fillable + `StoreOrderItemRequest` / DTO / resource exposure. Staff enter notes when adding or editing a line (kitchen / bar instructions).
-- **Payments — manual methods only:** `POST /api/v1/payments` already accepts `method`: `cash` | `e_wallet` | `credit` (see `App\Enums\PaymentMethod`). For **Maya** vs **GCash** as separate buttons in the UI:
-  - **Both** map to **`e_wallet`** on the API (no new PSP integration).
-  - **Distinguish provider** for reporting/display: use existing nullable **`reference`** on `payments` for a short label (e.g. `MAYA`, `GCASH`) **or** add optional `e_wallet_provider` (string/enum) in a migration — **decide in Phase 1**; v1 minimum is **`e_wallet` + `reference`** if the column is enough.
-  - **No** redirect to Maya/GCash checkout URLs; **no** webhook or tokenized capture in this slice.
-- **New migrations / enums:** at minimum **`order_items.notes`**; optional payment provider field if `reference` is reserved for transaction IDs only.
+- **Payments — manual methods only:** `POST /api/v1/payments` accepts `method`: `cash` | `e_wallet` | `credit` (see `App\Enums\PaymentMethod`). **Maya** / **GCash** → `method: e_wallet` plus **`e_wallet_provider`** (`maya` \| `gcash`) on **`payments`**. Optional **`reference`** for receipt/txn text. **No** hosted wallet redirect or webhooks in this slice.
+- **Migrations / enums:** **`order_items.notes`**; **`payments.e_wallet_provider`**, **`payments.shift_id`** (nullable; set when the payment is recorded against a shift for cash/e-wallet audit and SPA links to the cash register ledger).
 
 ## 4. Frontend contract
 
@@ -51,27 +50,28 @@ This is the **default** POS composer layout for burst-tea. **Do not** implement 
 | **Product cards** | Each **product** is a **card**: image (if available placeholder otherwise), **title**, short **description** (optional), and **price context**. **Variants are not** edited here — they are **chosen on the card**. |
 | **Variants on the card** | At the **bottom** of each card, show **all sellable variants** for that product as a **single row or split control** (e.g. “REGULAR ₱85” \| “LARGE ₱105”). Tapping/clicking a variant adds that **variant line** to the order (or opens quantity if you standardize on double-tap — default: **one tap = add 1** of that variant). **Do not** send users to product detail or a separate dialog for routine variant picks. |
 | **Featured / promo** | Optional: support a “featured” or **best seller** visual treatment for individual products (badge, emphasis) — data can come from product flags later; v1 can be static styling hooks only. |
-| **Order summary (cart)** | **Right-hand column** on large screens: **“Order summary”** with line items (thumbnail optional), variant labels, **per-line notes** (see below), **quantity steppers** (− / +), line subtotals, then **subtotal**, taxes if applicable, **total**, and primary **Checkout** (or **Review order**) — **not** the final payment screen (see §4.4). |
+| **Order summary (cart)** | **Right-hand column** on large screens: **“Order summary”** with line items (thumbnail optional), variant labels, **per-line notes** (see below), **quantity steppers** (− / +), line subtotals, then **subtotal**, taxes if applicable, **total**, and primary **Checkout** (or **Review order**) — **not** the final payment screen (see §4.4). **Scroll:** the **line list** scrolls inside the column; **totals + Checkout** remain **pinned/visible** below the scroll region (desktop **POS** layout uses **native `overflow-y-auto`** + **`.scrollbar-thin`**, not Radix **`ScrollArea`**, so nested flex does not collapse scroll height). |
 | **Per-line notes** | Each cart line MUST support an optional **note** (textarea or inline field per row): e.g. “50% sugar”, “no onions”. Show the note in the summary and on the **checkout review** page. Persist via **`order_items.notes`** once the line exists on the server; composer may collect notes **before** POSTing items (implementation choice: prompt on add vs edit in cart). |
 
 **Responsive behavior (required):**
 
 | Viewport | Layout |
 |----------|--------|
-| **Desktop / ~14″ laptop** (~`lg` and up) | **Three-region** layout: **app sidebar** (existing `AdminLayout`) \| **menu grid** (flex-1) \| **order summary** (fixed min-width column, e.g. `w-full max-w-md` or `lg:w-96`). Menu grid uses **2–3 columns** of cards depending on breakpoint. |
+| **Desktop / ~14″ laptop** (~`lg` and up) | **Three-region** layout: **app sidebar** (existing `AdminLayout`) \| **menu grid** (flex-1) \| **order summary** (fixed min-width column). The **cart column can be collapsed** (toggle) to widen the menu; **default: expanded**. Menu grid uses **2–3 columns** of cards depending on breakpoint. **Product grid column** scrolls with **`overflow-y-auto`** + thin scrollbar when the shell is **`h-dvh`** / **`overflow-hidden`** so the **whole page** does not scroll. |
 | **Tablet** | Same as desktop or slightly narrower cart; reduce card columns to 2. |
-| **Mobile** | **Stacked**: category tabs (horizontal scroll) → product grid (**1–2 columns**) → order summary becomes a **sticky bar** (total + item count) that opens a **Sheet** or **Drawer** with full cart contents, **or** a dedicated cart route — pick one pattern in Phase 0 and document it here. **Do not** rely on a permanently visible right column on small screens. |
+| **Mobile** | **Stacked**: category tabs (horizontal scroll) → product grid (**1–2 columns**) → **sticky bottom bar** (total + item count) opens a **right Sheet** with full cart. **Do not** rely on a permanently visible right column on small screens. |
 
 **Accessibility:** focus order for tabs and variant controls; cart sheet/drawer must trap focus and be closable; quantity buttons need `aria-label`s`; note fields need labels.
 
 ### 4.2 Routes, hooks, and files
 
-- **Composer route (suggested):** `/orders/new` or `/pos` or `/orders/composer` — **choose one** in Phase 1 and list here; register in [`frontend/src/routes/AppRoutes.tsx`](../../frontend/src/routes/AppRoutes.tsx) with lazy page default export.
-- **Checkout / review route (mandatory):** **`/orders/:orderId/checkout`** (or `/orders/:orderId/review`) — **new page** after composer. Shows **final line list** (variants, qty, **notes**, totals) and the **Pay** section (§4.4). User reaches it by **Checkout** from the cart (create/persist order + navigate, or navigate with draft — **define in Phase 1**).
-- **Existing:** `/orders` may remain a **server-paginated order list** (`DataTableServer`) — that is **separate** from the composer UI in §4.1.
-- **Hooks / API:** `src/api/orders.ts`, `order-items`, `payments`, `products`/`categories` for menu data; hooks such as `useOrderComposer`, `useMenuForOrdering` — **no** raw Axios in card components.
+- **Composer route:** **`/pos/new`** (no order id yet) → after the first **`POST /orders`**, the SPA navigates to **`/pos/:orderId/compose`** so refresh keeps the in-progress order. **Use `/pos`** (not `/orders/...`) for the POS shell so the **Orders** sidebar item does not highlight together with **New order** (`matchPath('/orders')` would otherwise match `/orders/new`). **Order lifecycle:** server-backed order on **first line add** (first `POST /orders` includes at least one line).
+- **Checkout / review route:** **`/pos/:orderId/checkout`** — read-only **summary**; **Pay** on this page (§4.4). Reached from **Checkout** in the cart.
+- **Order detail:** **`/orders/:orderId`** — after payment, **redirect here**; shows **payments** and links to **cash register ledger history** (`/cash-registers/:cashRegisterId/ledger-history`) when a payment has **`shift_id`** (cash register integration).
+- **Existing:** `/orders` remains the **server-paginated order list** (`DataTableServer`) — separate from the composer UI in §4.1.
+- **Hooks / API:** [`frontend/src/api/orders.ts`](../../frontend/src/api/orders.ts), [`frontend/src/api/payments.ts`](../../frontend/src/api/payments.ts); `useOrder`, `useProducts`, `useCategoryOptions`, `useShiftSession` (checkout) — **no** raw Axios in card components.
 - **State:** composer cart can be **React state** + optional `useReducer` or a **small local store** scoped to the page (do **not** expand Zustand beyond auth unless `BLUEPRINT` is updated).
-- **UI:** shadcn/ui — `Tabs` or custom pill row, `Card`, `Button`, `Sheet` / `Drawer` for mobile cart, `ScrollArea`, `Separator`, `Badge`; match existing theme tokens (`bg-card`, `border-card-border`, accent).
+- **UI:** shadcn/ui — `Tabs` or custom pill row, `Card`, `Button`, `Sheet` / `Drawer` for mobile cart, `Separator`, `Badge`; match existing theme tokens (`bg-card`, `border-card-border`, accent). Use **`ScrollArea`** only where it receives a **bounded height** (e.g. mobile **Sheet** cart). **POS desktop:** **menu** + **embedded cart line list** use **`overflow-y-auto`** and **`.scrollbar-thin`** ([`index.css`](../../frontend/src/index.css)) with **`min-h-0` / `basis-0`** flex children — avoids Radix scroll viewport **0 height** inside nested flex.
 
 ### 4.3 Explicit non-goals for the ordering menu UI
 
@@ -88,21 +88,21 @@ After **Checkout** from the composer, the user lands on a **dedicated page** (no
 | **Summary** | Full order: lines with product/variant names, qty, **line notes**, line totals, **subtotal**, **tax** if applicable, **grand total**. Read-only or allow only **note/qty** edits if spec allows — default **read-only** review before pay. |
 | **Payment method** | **No third-party integration** — staff select how the customer settled: **Cash** | **Maya** | **GCash** (or equivalent labels). **Cash** → `POST` payment `method: cash`. **Maya** / **GCash** → `method: e_wallet` plus **provider** in `reference` or dedicated field (§3). |
 | **Shift** | If multiple shifts open, require **`shift_id`** on payment per existing `PostPaymentRequest` rules. |
-| **Post-payment** | On success, navigate to **order detail** or **confirmation** (define in Phase 1). |
+| **Post-payment** | On success, show Sonner **`toast.success('Payment complete')`**, **`reload()`** order, then **navigate** to **`/orders/:orderId`** (order detail). |
 
 **Explicit exclusions:** No Maya/GCash **API keys**, no redirect to wallet apps for automated capture, no webhook handlers for this slice — **record-keeping only**.
 
 ## 5. Acceptance criteria
 
-- [ ] Staff can open the **ordering menu page** and see **category tabs** + **product cards** with **variants on each card** as in §4.1.
-- [ ] Each line in the cart supports **notes**; notes appear in summary and on the **checkout** page; persisted on **`order_items.notes`**.
-- [ ] **Checkout** navigates to a **separate page** with full **order summary** before payment.
-- [ ] **Pay** flow offers **Cash**, **Maya**, and **GCash** (or agreed labels); **no** payment gateway integration; API uses `cash` / `e_wallet` as in §3.
-- [ ] Adding variants updates the **order summary**; quantities can be changed from the summary (composer); totals reflect **variant prices** (PHP via `currency.ts`).
-- [ ] **Responsive:** layout matches §4.1 table for **desktop (~14″)** and **mobile** (cart accessible without horizontal scroll of the whole page); checkout page stacks cleanly on small screens.
-- [ ] **Permissions:** server-side enforcement; UI hides pay if unauthorized.
-- [ ] **Payments / shifts:** behavior matches spec + `BLUEPRINT.md` for cash/e-wallet and `shift_id` when required.
-- [ ] `BLUEPRINT.md` changelog updated if API or routes change.
+- [x] Staff can open the **ordering menu page** and see **category tabs** + **product cards** with **variants on each card** as in §4.1.
+- [x] Each line in the cart supports **notes**; notes appear in summary and on the **checkout** page; persisted on **`order_items.notes`**.
+- [x] **Checkout** navigates to a **separate page** with full **order summary** before payment.
+- [x] **Pay** flow offers **Cash**, **Maya**, and **GCash** (or agreed labels); **no** payment gateway integration; API uses `cash` / `e_wallet` as in §3.
+- [x] Adding variants updates the **order summary**; quantities can be changed from the summary (composer); totals reflect **variant prices** (PHP via `currency.ts`).
+- [x] **Responsive:** layout matches §4.1 table for **desktop (~14″)** and **mobile** (cart accessible without horizontal scroll of the whole page); checkout page stacks cleanly on small screens.
+- [x] **Permissions:** server-side enforcement; UI hides pay if unauthorized.
+- [x] **Payments / shifts:** behavior matches spec + `BLUEPRINT.md` for cash/e-wallet and `shift_id` when required.
+- [x] `BLUEPRINT.md` changelog updated for API/routes and SPA polish (see **2026-04-18** entries).
 
 ## 6. Minimal context pack
 

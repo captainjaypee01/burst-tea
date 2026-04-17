@@ -11,16 +11,23 @@ use Illuminate\Support\Facades\DB;
 
 class CashDrawerService
 {
-    public function recordSale(Shift $shift, Order $order, int $amountCents): void
+    /**
+     * @param  string|null  $paymentLabel  e.g. "Cash", "PayMaya", "GCash" — shown in ledger notes after the order ref.
+     */
+    public function recordSale(Shift $shift, Order $order, int $amountCents, ?string $paymentLabel = null): void
     {
-        DB::transaction(function () use ($shift, $order, $amountCents) {
+        DB::transaction(function () use ($shift, $order, $amountCents, $paymentLabel) {
+            $notes = 'Order '.$order->order_number;
+            if ($paymentLabel !== null && $paymentLabel !== '') {
+                $notes .= ' · '.$paymentLabel;
+            }
             $entry = new CashLedgerEntry([
                 'shift_id' => $shift->id,
                 'type' => CashLedgerType::Sale,
                 'amount_cents' => $amountCents,
                 'reference_type' => Order::class,
                 'reference_id' => $order->id,
-                'notes' => 'Order '.$order->order_number,
+                'notes' => $notes,
             ]);
             $entry->save();
         });

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\Orders\CancelOrderAction;
 use App\Actions\Orders\StoreOrderAction;
 use App\DTOs\Orders\StoreOrderDTO;
 use App\Http\Controllers\Controller;
@@ -39,6 +40,24 @@ class OrderController extends Controller
     {
         $this->authorizePermission($request->user(), Permissions::ORDER_READ);
 
-        return new OrderResource($order->load(['items.variant.product', 'items.modifiers', 'user', 'customer']));
+        return new OrderResource($order->load([
+            'items.variant.product',
+            'items.modifiers',
+            'user',
+            'customer',
+            'payments.shift.cashRegister',
+        ]));
+    }
+
+    public function cancel(Request $request, Order $order, CancelOrderAction $action): OrderResource
+    {
+        $cancelled = $action->execute($request->user(), $order);
+
+        return new OrderResource($cancelled->load([
+            'items.variant.product',
+            'items.modifiers',
+            'user',
+            'customer',
+        ]));
     }
 }

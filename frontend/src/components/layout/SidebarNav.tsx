@@ -30,18 +30,23 @@ export function SidebarNav(): ReactElement {
     <>
       <SidebarHeader
         className={cn(
-          'flex h-16 shrink-0 flex-row items-center border-b border-sidebar-border p-3',
+          'flex h-16 shrink-0 flex-row items-center border-b border-border/12 p-3',
           'group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center',
         )}
       >
         <div className="min-w-0 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
           <div className="truncate font-semibold tracking-tight text-sidebar-foreground">
-            <span className="hidden text-lg text-emerald-400 group-data-[collapsible=icon]:inline" title="Burst Tea POS">
+            <span
+              className="hidden text-lg font-display text-primary group-data-[collapsible=icon]:inline"
+              title="Burst Tea POS"
+            >
               BT
             </span>
             <span className="inline group-data-[collapsible=icon]:hidden">
-              <span className="text-emerald-400">Burst Tea</span>
-              <span className="block text-[10px] font-normal uppercase tracking-widest text-sidebar-muted">POS Admin</span>
+              <span className="font-display text-xl text-primary">Burst Tea</span>
+              <span className="mt-0.5 block text-[10px] font-normal uppercase tracking-[0.18em] text-muted-foreground">
+                POS Admin
+              </span>
             </span>
           </div>
         </div>
@@ -64,7 +69,7 @@ export function SidebarNav(): ReactElement {
                       className={cn(
                         'h-auto min-h-12 !py-2.5 !pl-3 !pr-3 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!min-h-0 group-data-[collapsible=icon]:!p-2',
                         isActive
-                          ? 'bg-sidebar-active text-white shadow-sm hover:bg-sidebar-active hover:text-white data-[active=true]:bg-sidebar-active data-[active=true]:text-white'
+                          ? 'bg-primary text-primary-foreground shadow-none hover:bg-primary hover:text-primary-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground'
                           : 'text-sidebar-foreground/90 hover:bg-sidebar-hover',
                       )}
                     >
@@ -75,12 +80,22 @@ export function SidebarNav(): ReactElement {
                         className="flex w-full items-start gap-3 overflow-hidden rounded-[inherit] outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                       >
                         <item.icon
-                          className="mt-0.5 size-5 shrink-0 opacity-95 group-data-[collapsible=icon]:mt-0 group-data-[collapsible=icon]:size-4"
+                          className={cn(
+                            'mt-0.5 size-5 shrink-0 opacity-95 group-data-[collapsible=icon]:mt-0 group-data-[collapsible=icon]:size-4',
+                            isActive && 'text-primary-foreground',
+                          )}
                           aria-hidden
                         />
                         <span className="min-w-0 flex-1 space-y-0.5 group-data-[collapsible=icon]:hidden">
                           <span className="block truncate text-sm font-medium leading-tight">{item.label}</span>
-                          <span className="block truncate text-xs font-normal leading-snug text-sidebar-muted">{item.description}</span>
+                          <span
+                            className={cn(
+                              'mt-0.5 block truncate text-[11px] font-normal leading-snug',
+                              isActive ? 'text-primary-foreground/65' : 'text-muted-foreground',
+                            )}
+                          >
+                            {item.description}
+                          </span>
                         </span>
                       </NavLink>
                     </SidebarMenuButton>
@@ -92,8 +107,8 @@ export function SidebarNav(): ReactElement {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-3 group-data-[collapsible=icon]:p-2">
-        <p className="rounded-md bg-black/20 px-3 py-2 text-xs leading-relaxed text-sidebar-muted group-data-[collapsible=icon]:hidden">
+      <SidebarFooter className="border-t border-border/12 p-3 group-data-[collapsible=icon]:p-2">
+        <p className="rounded-lg bg-primary/6 p-3 text-[11px] leading-relaxed text-muted-foreground group-data-[collapsible=icon]:hidden">
           <span className="font-semibold text-sidebar-foreground/90">Staff mode</span> — register flows here. A separate
           customer-facing flow can reuse the same catalog later.
         </p>

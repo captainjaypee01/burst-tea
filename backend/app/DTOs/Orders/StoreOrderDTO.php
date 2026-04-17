@@ -7,7 +7,7 @@ use App\Http\Requests\Api\V1\Orders\StoreOrderRequest;
 readonly class StoreOrderDTO
 {
     /**
-     * @param  array<int, array{product_variant_id: int, quantity: int, modifier_ids?: list<int>}>  $items
+     * @param  array<int, array{product_variant_id: int, quantity: int, modifier_ids?: list<int>, notes?: string|null}>  $items
      */
     public function __construct(
         public ?int $customerId,
@@ -16,7 +16,7 @@ readonly class StoreOrderDTO
 
     public static function fromRequest(StoreOrderRequest $request): self
     {
-        /** @var array{customer_id?: int|null, items: array<int, array{product_variant_id: int, quantity: int, modifier_ids?: list<int>}>} $data */
+        /** @var array{customer_id?: int|null, items: array<int, array{product_variant_id: int, quantity: int, modifier_ids?: list<int>, notes?: string|null}>} $data */
         $data = $request->validated();
 
         return new self(

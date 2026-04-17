@@ -15,6 +15,8 @@ class PaymentController extends Controller
         /** @var \App\Models\User $user */
         $user = $request->user();
 
-        return new PaymentResource($action->execute($user, PostPaymentDTO::fromRequest($request)));
+        $payment = $action->execute($user, PostPaymentDTO::fromRequest($request));
+
+        return new PaymentResource($payment->loadMissing(['shift.cashRegister']));
     }
 }

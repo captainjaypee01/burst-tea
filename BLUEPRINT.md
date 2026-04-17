@@ -61,8 +61,8 @@ Permissions are defined in [`backend/app/Support/Permissions.php`](backend/app/S
 - **No API calls in presentational components** — use hooks under [`frontend/src/hooks/`](frontend/src/hooks/) which call [`frontend/src/api/`](frontend/src/api/).
 - **Auth state** — Zustand store [`frontend/src/stores/authStore.ts`](frontend/src/stores/authStore.ts) only.
 - **Routing (SPA):** [`frontend/src/routes/AppRoutes.tsx`](frontend/src/routes/AppRoutes.tsx) defines the full tree (including `const X = lazy(() => import('@/pages/…'))` per route); each page module **default-exports** its screen component. [`frontend/src/App.tsx`](frontend/src/App.tsx) only renders `<AppRoutes />`. **Public** routes use [`GuestOnly`](frontend/src/components/auth/GuestOnly.tsx) (e.g. `/login` — redirects to `/dashboard` if a token exists). **Private** staff routes nest under [`RequireAuth`](frontend/src/components/auth/RequireAuth.tsx) + [`AdminLayout`](frontend/src/components/layout/AdminLayout.tsx). The route tree is wrapped in `Suspense` with [`RouteLoadingFallback`](frontend/src/components/layout/RouteLoadingFallback.tsx). **Hooks** that fetch data should accept an `enabled` flag (see `useProducts`, `useCategory`) so pages do not call the API when the user lacks permission or the route param is invalid.
-- **Paths:** `/login`, `/dashboard`, `/orders`, `/categories`, `/categories/:categoryId`, `/products`, `/products/:productId`, `/shifts/session`, `/cash-registers`, `/cash-registers/:cashRegisterId/ledger-history`.
-- **Dashboard:** [`DashboardPage`](frontend/src/pages/DashboardPage.tsx) is the staff **home** after login — shortcut cards to **Orders**, **Categories**, **Products**, **Shift session**, and **Cash registers** (same destinations as the sidebar in [`nav-items.ts`](frontend/src/components/layout/nav-items.ts)); not a KPI/reporting surface yet.
+- **Paths:** `/login`, `/dashboard`, `/orders`, `/orders/:orderId` (detail), **`/pos/new`**, **`/pos/:orderId/compose`**, **`/pos/:orderId/checkout`** (POS composer + checkout — separate from `/orders` so the sidebar does not double-highlight), `/categories`, `/categories/:categoryId`, `/products`, `/products/:productId`, `/shifts/session`, `/cash-registers`, `/cash-registers/:cashRegisterId/ledger-history`.
+- **Dashboard:** [`DashboardPage`](frontend/src/pages/DashboardPage.tsx) is the staff **home** after login — shortcut cards to **Orders**, **New order** (`/pos/new`), **Categories**, **Products**, **Shift session**, and **Cash registers** (same destinations as the sidebar in [`nav-items.ts`](frontend/src/components/layout/nav-items.ts)); not a KPI/reporting surface yet.
 - **Env:** `VITE_API_URL` (see [`frontend/.env.example`](frontend/.env.example)).
 
 ### Implementation sequencing (repo-wide)
@@ -70,9 +70,8 @@ Permissions are defined in [`backend/app/Support/Permissions.php`](backend/app/S
 Canonical **order** for **next** SPA work is documented in [`README.md`](README.md) (**Module roadmap**). In short:
 
 - **Catalog** — staff CRUD for **categories**, **products**, and **variants** is **implemented** in the SPA; spec [`docs/modules/catalog.md`](docs/modules/catalog.md).
-- **Ordering / POS** is the natural **next** slice so line items reference real variants and prices.
-- **Inventory** (inventory items, **inventory ledger**, stock movements, recipes) is an **operational record** of what you keep in stock (e.g. patties, cups). It is **not** a prerequisite to **taking orders** unless you later add **hard stock enforcement** at checkout. Inventory can ship **after** a minimal ordering path or **in parallel** for back-office use only.
-- **Ordering / POS (next):** Staff **composer** UX is specified in [`docs/modules/ordering.md`](docs/modules/ordering.md) — **category tabs**, **product cards** with **inline variants** (not the catalog admin table pattern), **per-line notes**, **order summary**, then a **separate checkout page** for **review and Pay** (**Cash** vs **Maya** / **GCash** as manual e-wallet — **no** PSP integration). **Responsive** cart on mobile. Implement per that spec when starting the ordering slice.
+- **Ordering / POS** — **implemented** per [`docs/modules/ordering.md`](docs/modules/ordering.md): **`/pos/new`**, **`/pos/:orderId/compose`**, **`/pos/:orderId/checkout`**; **category tabs**, **product cards** with **inline variants**, **per-line notes**, **order summary** (collapsible on desktop + **Sheet** on mobile), **checkout** for **Cash / Maya / GCash** (record-only). **Cash register:** **cash/e-wallet** payments post **`sale`** ledger rows when policy requires; **order detail** links to **register ledger history** when a payment has **`shift_id`**. **UX polish:** POS shell uses bounded-height flex + **native `overflow-y-auto`** and **`.scrollbar-thin`** for menu/cart scroll regions where Radix **`ScrollArea`** would collapse in nested flex; see changelog **2026-04-18** (POS scrolling).
+- **Recommended next slice:** **Customers & credit** (README roadmap phase **4**); create [`docs/modules/customers.md`](docs/modules/customers.md) from the module template when starting. **Inventory** (phase **5**) remains an **operational record** (not required for sales unless you add **stock enforcement** at checkout); can ship **in parallel** for back-office.
 
 ## Docker
 
@@ -99,6 +98,29 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml build
 Pass `VITE_API_URL` at build time so the SPA points at the public API URL ([`docker/frontend/Dockerfile.prod`](docker/frontend/Dockerfile.prod)). Set Laravel `APP_KEY` and database credentials via environment / secrets manager (not committed).
 
 ## Changelog
+
+### 2026-04-18 — SPA: POS scroll regions, orders list timestamps, checkout toast, product dialog UX
+
+- **Frontend — POS height & scroll:** [`AdminLayout`](frontend/src/components/layout/AdminLayout.tsx) in **POS** routes uses **`h-dvh`**, **`overflow-hidden`**, and full-height wrappers so the composer/checkout tree gets a **bounded height**. [`OrderComposerPage`](frontend/src/pages/OrderComposerPage.tsx) **product column** and [`OrderCartPanel`](frontend/src/components/ordering/OrderCartPanel.tsx) **POS** cart **line list** use **`min-h-0` / `flex-1` / `basis-0`** with **`overflow-y-auto`** and **`.scrollbar-thin`** ([`frontend/src/index.css`](frontend/src/index.css)) so only the **menu** and **line list** scroll; **totals + Checkout** stay visible. Radix **`ScrollArea`** is avoided in these nested-flex hotspots (zero-height viewport issue); **[`scroll-area.tsx`](frontend/src/components/ui/scroll-area.tsx)** keeps **`min-h-0`** on root/viewport for safer use elsewhere (e.g. standard cart **Sheet**).
+- **Frontend — Orders index:** [`OrdersPage`](frontend/src/pages/OrdersPage.tsx) **Created** column formats API **UTC** instants as **local** `YYYY-MM-DD HH:mm:ss` via [`formatLocalDateTime`](frontend/src/lib/datetime.ts); row **actions** use **icon** buttons for scanability.
+- **Frontend — Checkout:** After successful **`POST /payments`**, Sonner toast **"Payment complete"** (was **"Payment recorded"**); navigation to **`/orders/:orderId`** unchanged ([`OrderCheckoutPage`](frontend/src/pages/OrderCheckoutPage.tsx)).
+- **Frontend — New product dialog:** [`ProductCreateDialog`](frontend/src/components/catalog/ProductCreateDialog.tsx) body is **scrollable** (`max-h-[calc(90vh-11rem)]` + overflow) for long variant lists; **remove variant** is an **X** control on the variant card when **`variants.length > 1`**.
+- **Docs / roadmap:** [`README.md`](README.md) snapshot and [`docs/prompts/module-delivery-workflow.md`](docs/prompts/module-delivery-workflow.md) default **next** module → **Customers & credit** (ordering spec retained as reference).
+
+### 2026-04-18 — POS cart layout, cancel order API, cash ledger payment labels
+
+- **Backend:** `POST /api/v1/orders/{order}/cancel` — open orders with **no recorded payments** → `cancelled` (`order.delete`). **`CashDrawerService::recordSale`** ledger **notes** append `· Cash` / `· PayMaya` / `· GCash` (or `· E-wallet`) after the order reference.
+- **Frontend:** Composer **row** uses **`overflow-hidden`** so only the **menu** scrolls; **cart** column is height-bounded. **Checkout:** **Back** (browser history), **Cancel order** (same permission as API). Loading a **cancelled** order on the composer sends the user to **`/pos/new`**.
+
+### 2026-04-18 — SPA: POS routes under `/pos` (sidebar active state)
+
+- **Why:** `SidebarNav` uses `matchPath({ path: '/orders', end: false })` for the **Orders** item, so URLs like **`/orders/new`** also matched **Orders** and **New order** at once. **Composer + checkout** moved to **`/pos/new`**, **`/pos/:orderId/compose`**, **`/pos/:orderId/checkout`**; **order detail** stays **`/orders/:orderId`**. Nav, dashboard, and docs updated.
+
+### 2026-04-18 — Ordering (POS) slice: API, SPA, cash ledger links
+
+- **Backend:** `order_items.notes` (nullable); `payments.e_wallet_provider` (`maya` \| `gcash`, nullable) and `payments.shift_id` (nullable FK) for audit and UI links. **`PATCH` / `DELETE`** ` /api/v1/orders/{order}/items/{order_item}` for cart edits. **`POST /payments`** accepts optional `reference`; **`e_wallet_provider` required** when `method` is `e_wallet`. **`ProductVariantResource`** may include nested **`product`** when loaded. **`GET /orders/{order}`** includes **`payments.shift.cashRegister`**. **`PostPaymentAction`** persists reference, e-wallet provider, shift id, and still records **cash / e-wallet** sales via **`CashDrawerService`** when the order becomes fully paid.
+- **Frontend:** Routes **`/pos/new`**, **`/pos/:orderId/compose`**, **`/pos/:orderId/checkout`** (composer + checkout; **`/pos` prefix** avoids sidebar `matchPath('/orders')` matching the POS flow), **`/orders/:orderId`** (detail with **ledger** link when payment has a shift). **`OrderComposerPage`**: category pills, product **cards** + variants, **collapsible** desktop cart + **Sheet** on small screens. **`OrderCheckoutPage`**: read-only summary, **Cash / Maya / GCash**, register selector for **`shift_id`**. Nav + dashboard **New order** entry. API helpers in [`frontend/src/api/orders.ts`](frontend/src/api/orders.ts), [`frontend/src/api/payments.ts`](frontend/src/api/payments.ts).
+- **Tests:** Pest [`backend/tests/Feature/Api/V1/OrderingTest.php`](backend/tests/Feature/Api/V1/OrderingTest.php); Vitest [`frontend/src/hooks/useMediaQuery.test.ts`](frontend/src/hooks/useMediaQuery.test.ts).
 
 ### 2026-04-17 — Ordering spec: line notes, checkout page, manual e-wallet
 
@@ -187,6 +209,10 @@ Pass `VITE_API_URL` at build time so the SPA points at the public API URL ([`doc
 
 - Documented **cash ledger** semantics (append-only rows; kinds `opening`, `sale`, `expense`, `advance`, `adjustment`, `closing`), **payment → shift → ledger** expectations for the future **ordering** UI, and **expense / cash advance** via `shift_id` in [`docs/modules/shifts-and-session.md`](docs/modules/shifts-and-session.md).
 - Added a short **Domain: Cash drawer & shift ledger** subsection above to keep implementers aligned without duplicating API tables.
+
+### 2026-04-18 — Theme
+
+- Theme: migrated admin SPA to warm cafe palette (espresso/cream); fonts Inter + Playfair Display.
 
 ### 2026-04-17 — Multi-register shifts & cash audit
 

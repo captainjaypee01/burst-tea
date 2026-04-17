@@ -1,4 +1,5 @@
 import { type ReactElement, useCallback, useEffect, useMemo, useState } from 'react'
+import { X } from 'lucide-react'
 
 import { createProduct } from '@/api/products'
 import { fetchCategoryOptions } from '@/api/categories'
@@ -13,7 +14,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { CATEGORY_NONE_VALUE } from '@/constants/catalog'
 import { getApiErrorMessage } from '@/lib/api-client'
@@ -165,7 +165,10 @@ export function ProductCreateDialog({
       }}
     >
       <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
-        <form className="flex min-h-0 flex-1 flex-col" onSubmit={(e) => void handleSubmit(e)}>
+        <form
+          className="flex max-h-[90vh] flex-col overflow-hidden"
+          onSubmit={(e) => void handleSubmit(e)}
+        >
           <DialogHeader className="shrink-0 space-y-1.5 border-b border-border px-6 py-4 pe-14 text-start">
             <DialogTitle>{lockedCategory ? `New product in ${lockedCategory.name}` : 'New product'}</DialogTitle>
             <DialogDescription>
@@ -181,8 +184,8 @@ export function ProductCreateDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <ScrollArea className="min-h-0 flex-1">
-            <div className="grid gap-4 px-6 py-4">
+          <div className="scrollbar-thin max-h-[calc(90vh-11rem)] min-h-0 overflow-y-auto overflow-x-hidden px-6 py-4 pr-8">
+            <div className="grid gap-4">
             {error ? (
               <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
                 {error}
@@ -273,8 +276,23 @@ export function ProductCreateDialog({
               {variants.map((row) => (
                 <div
                   key={row.id}
-                  className="grid gap-4 rounded-lg border border-border bg-muted-bg/30 p-3 sm:grid-cols-2"
+                  className={cn(
+                    'relative grid gap-4 rounded-lg border border-border bg-muted-bg/30 p-3 sm:grid-cols-2',
+                    variants.length > 1 && 'pt-2 pe-10',
+                  )}
                 >
+                  {variants.length > 1 ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute end-1.5 top-1.5 size-8 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      aria-label="Remove variant"
+                      onClick={() => setVariants((prev) => prev.filter((r) => r.id !== row.id))}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  ) : null}
                   <div className="grid gap-1 sm:col-span-2">
                     <label className="text-xs font-medium text-muted">Variant name</label>
                     <Input
@@ -325,24 +343,11 @@ export function ProductCreateDialog({
                     />
                     Active
                   </label>
-                  {variants.length > 1 ? (
-                    <div className="sm:col-span-2">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-700"
-                        onClick={() => setVariants((prev) => prev.filter((r) => r.id !== row.id))}
-                      >
-                        Remove variant
-                      </Button>
-                    </div>
-                  ) : null}
                 </div>
               ))}
             </div>
             </div>
-          </ScrollArea>
+          </div>
 
           <DialogFooter className="shrink-0 border-t border-border px-6 py-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

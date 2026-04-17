@@ -49,7 +49,10 @@ Route::middleware(['auth:sanctum', 'staff.active'])->group(function () {
     Route::apiResource('customers', CustomerController::class)->whereNumber('customer');
 
     Route::apiResource('orders', OrderController::class)->only(['index', 'store', 'show'])->whereNumber('order');
+    Route::post('orders/{order}/cancel', [OrderController::class, 'cancel'])->whereNumber('order');
     Route::post('orders/{order}/items', [OrderItemController::class, 'store'])->whereNumber('order');
+    Route::patch('orders/{order}/items/{order_item}', [OrderItemController::class, 'update'])->whereNumber(['order', 'order_item']);
+    Route::delete('orders/{order}/items/{order_item}', [OrderItemController::class, 'destroy'])->whereNumber(['order', 'order_item']);
 
     Route::post('payments', [PaymentController::class, 'store']);
 

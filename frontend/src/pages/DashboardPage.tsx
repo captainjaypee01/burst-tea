@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowUpRight, FolderTree, Landmark, Package, ShoppingCart, Wallet } from 'lucide-react'
+import { ArrowUpRight, FolderTree, Landmark, Package, ShoppingCart, Store, Wallet } from 'lucide-react'
 
 import { useAuth } from '@/hooks/useAuth'
 
@@ -36,6 +36,20 @@ export function DashboardPage(): ReactElement {
           </div>
           <h2 className="mt-4 text-lg font-semibold text-foreground">Orders</h2>
           <p className="mt-1 text-sm leading-relaxed text-muted">Review and manage POS orders, pagination, and status.</p>
+        </Link>
+
+        <Link
+          to="/pos/new"
+          className="group relative overflow-hidden rounded-2xl border border-card-border bg-card p-6 shadow-sm transition hover:border-[color-mix(in_oklab,var(--color-accent)_35%,var(--color-card-border))] hover:shadow-md"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[color-mix(in_oklab,var(--color-accent)_12%,white)] text-accent">
+              <Store className="size-6" aria-hidden />
+            </div>
+            <ArrowUpRight className="size-5 shrink-0 text-muted opacity-0 transition group-hover:opacity-100" aria-hidden />
+          </div>
+          <h2 className="mt-4 text-lg font-semibold text-foreground">New order</h2>
+          <p className="mt-1 text-sm leading-relaxed text-muted">POS menu, cart, and checkout — separate from the orders table.</p>
         </Link>
 
         <Link

@@ -17,6 +17,7 @@ class OrderItem extends Model
         'quantity',
         'unit_price_cents',
         'line_total_cents',
+        'notes',
     ];
 
     /**

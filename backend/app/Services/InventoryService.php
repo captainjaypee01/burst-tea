@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Enums\InventoryLedgerType;
 use App\Models\InventoryItem;
 use App\Models\InventoryLedgerEntry;
-use App\Models\InventoryLedgerEntry;
 use App\Models\Order;
 use App\Models\Recipe;
 use Illuminate\Support\Facades\DB;

@@ -24,7 +24,7 @@ class OrderService
     }
 
     /**
-     * @param  array<int, array{product_variant_id: int, quantity: int, modifier_ids?: list<int>}>  $lines
+     * @param  array<int, array{product_variant_id: int, quantity: int, modifier_ids?: list<int>, notes?: string|null}>  $lines
      * @return array{subtotal_cents: int, tax_cents: int, total_cents: int, lines: list<array<string, mixed>>}
      */
     public function buildLines(array $lines): array
@@ -36,6 +36,13 @@ class OrderService
             $variant = ProductVariant::query()->with('product.modifiers')->findOrFail($line['product_variant_id']);
             $quantity = (int) $line['quantity'];
             $modifierIds = $line['modifier_ids'] ?? [];
+            $notes = isset($line['notes']) ? $line['notes'] : null;
+            if (is_string($notes)) {
+                $notes = trim($notes);
+                if ($notes === '') {
+                    $notes = null;
+                }
+            }
 
             $allowedModifierIds = $variant->product->modifiers()->pluck('modifiers.id')->all();
             foreach ($modifierIds as $mid) {
@@ -58,6 +65,7 @@ class OrderService
                 'unit_price_cents' => $unitPrice,
                 'line_total_cents' => $lineTotal,
                 'modifiers' => $modifiers,
+                'notes' => $notes,
             ];
         }
 
@@ -101,6 +109,7 @@ class OrderService
                 'quantity' => $row['quantity'],
                 'unit_price_cents' => $row['unit_price_cents'],
                 'line_total_cents' => $row['line_total_cents'],
+                'notes' => $row['notes'] ?? null,
             ]);
             $item->save();
 
@@ -138,6 +147,7 @@ class OrderService
             'quantity' => $row['quantity'],
             'unit_price_cents' => $row['unit_price_cents'],
             'line_total_cents' => $row['line_total_cents'],
+            'notes' => $row['notes'] ?? null,
         ]);
         $item->save();
 
@@ -148,6 +158,47 @@ class OrderService
                 'extra_price_cents' => $mod->extra_price_cents,
             ]);
         }
+
+        $this->recalculateOrderTotals($order);
+
+        return $order->fresh(['items.variant.product', 'items.modifiers']);
+    }
+
+    public function updateOrderItem(OrderItem $item, int $quantity, ?string $notes): Order
+    {
+        $order = $item->order;
+        if ($order->status !== OrderStatus::Open) {
+            throw ValidationException::withMessages([
+                'order' => ['Only open orders can be modified.'],
+            ]);
+        }
+
+        $quantity = max(1, $quantity);
+        $notes = $notes !== null ? trim($notes) : null;
+        if ($notes === '') {
+            $notes = null;
+        }
+
+        $item->quantity = $quantity;
+        $item->line_total_cents = (int) $item->unit_price_cents * $quantity;
+        $item->notes = $notes;
+        $item->save();
+
+        $this->recalculateOrderTotals($order);
+
+        return $order->fresh(['items.variant.product', 'items.modifiers']);
+    }
+
+    public function removeOrderItem(OrderItem $item): Order
+    {
+        $order = $item->order;
+        if ($order->status !== OrderStatus::Open) {
+            throw ValidationException::withMessages([
+                'order' => ['Only open orders can be modified.'],
+            ]);
+        }
+
+        $item->delete();
 
         $this->recalculateOrderTotals($order);
 

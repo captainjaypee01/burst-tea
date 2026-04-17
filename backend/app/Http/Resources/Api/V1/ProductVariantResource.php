@@ -22,6 +22,7 @@ class ProductVariantResource extends JsonResource
             'price_cents' => $this->price_cents,
             'sku' => $this->sku,
             'is_active' => $this->is_active,
+            'product' => new ProductResource($this->whenLoaded('product')),
         ];
     }
 }
