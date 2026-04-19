@@ -13,6 +13,7 @@ import {
   updateVariant,
 } from '@/api/products'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,8 @@ import { centsToDollarsString, dollarsToCents } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/authStore'
 import type { ProductVariant } from '@/types/models'
+
+type DestructiveConfirm = null | { type: 'product' } | { type: 'variant'; variant: ProductVariant }
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { CATEGORY_NONE_VALUE } from '@/constants/catalog'
@@ -71,6 +74,8 @@ export function ProductDetailPage(): ReactElement {
   const [vActive, setVActive] = useState(true)
   const [savingVariant, setSavingVariant] = useState(false)
   const [variantError, setVariantError] = useState<string | null>(null)
+  const [destructiveConfirm, setDestructiveConfirm] = useState<DestructiveConfirm>(null)
+  const [removeBusy, setRemoveBusy] = useState(false)
 
   const loadOptions = useCallback(async () => {
     setLoadingOptions(true)
@@ -148,20 +153,27 @@ export function ProductDetailPage(): ReactElement {
     }
   }
 
-  const removeProduct = async (): Promise<void> => {
-    if (!product) {
+  const performDestructive = useCallback(async (): Promise<void> => {
+    if (!product || !destructiveConfirm) {
       return
     }
-    if (!window.confirm(`Remove product “${product.name}”? It will be archived (soft-deleted).`)) {
-      return
-    }
+    setRemoveBusy(true)
     try {
-      await deleteProduct(product.id)
-      navigate(fromCategory != null ? `/categories/${fromCategory.id}` : '/products')
+      if (destructiveConfirm.type === 'product') {
+        await deleteProduct(product.id)
+        setDestructiveConfirm(null)
+        navigate(fromCategory != null ? `/categories/${fromCategory.id}` : '/products')
+      } else {
+        await deleteVariant(product.id, destructiveConfirm.variant.id)
+        setDestructiveConfirm(null)
+        await reload()
+      }
     } catch (err) {
       toast.error(getApiErrorMessage(err))
+    } finally {
+      setRemoveBusy(false)
     }
-  }
+  }, [destructiveConfirm, product, fromCategory, navigate, reload])
 
   const saveVariant = async (): Promise<void> => {
     if (!product) {
@@ -197,21 +209,6 @@ export function ProductDetailPage(): ReactElement {
       setVariantError(getApiErrorMessage(err))
     } finally {
       setSavingVariant(false)
-    }
-  }
-
-  const removeVariant = async (v: ProductVariant): Promise<void> => {
-    if (!product) {
-      return
-    }
-    if (!window.confirm(`Remove variant “${v.name}”?`)) {
-      return
-    }
-    try {
-      await deleteVariant(product.id, v.id)
-      await reload()
-    } catch (err) {
-      toast.error(getApiErrorMessage(err))
     }
   }
 
@@ -333,7 +330,12 @@ export function ProductDetailPage(): ReactElement {
             </Button>
           ) : null}
           {canDelete ? (
-            <Button type="button" variant="outline" className="border-red-200 text-red-800" onClick={() => void removeProduct()}>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-red-200 text-red-800"
+              onClick={() => setDestructiveConfirm({ type: 'product' })}
+            >
               Remove product
             </Button>
           ) : null}
@@ -399,7 +401,7 @@ export function ProductDetailPage(): ReactElement {
                             variant="outline"
                             size="sm"
                             className="shrink-0 border border-red-300 bg-card text-red-800 shadow-sm hover:bg-red-50"
-                            onClick={() => void removeVariant(v)}
+                            onClick={() => setDestructiveConfirm({ type: 'variant', variant: v })}
                           >
                             Remove
                           </Button>
@@ -468,6 +470,34 @@ export function ProductDetailPage(): ReactElement {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={destructiveConfirm !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDestructiveConfirm(null)
+          }
+        }}
+        title={
+          destructiveConfirm == null
+            ? 'Confirm'
+            : destructiveConfirm.type === 'product'
+              ? `Remove product “${product.name}”?`
+              : `Remove variant “${destructiveConfirm.variant.name}”?`
+        }
+        description={
+          destructiveConfirm?.type === 'product'
+            ? 'It will be archived (soft-deleted).'
+            : destructiveConfirm?.type === 'variant'
+              ? 'This variant will be removed from the product.'
+              : undefined
+        }
+        confirmLabel="Remove"
+        cancelLabel="Keep"
+        confirmVariant="destructive"
+        pending={removeBusy}
+        onConfirm={performDestructive}
+      />
     </div>
   )
 }

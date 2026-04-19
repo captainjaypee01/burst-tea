@@ -2,7 +2,7 @@
 
 **Status:** ready  
 **Owner / branch:** optional  
-**Last updated:** 2026-04-18  
+**Last updated:** 2026-04-19  
 
 ## 1. Problem & outcome
 
@@ -40,7 +40,8 @@ Superadmin bypasses checks per `Employee::hasPermission` / `User::hasPermission`
 - **UI:** shadcn/ui (`Dialog`, `Button`, `Input`, `Select`, `DataTableServer`, **Sonner** toasts via [`components/ui/sonner.tsx`](../../frontend/src/components/ui/sonner.tsx) + `import { toast } from 'sonner'`). No raw Axios in pages — hooks only.
 - **Money helpers:** `src/lib/money.ts` (`dollarsToCents`, `centsToDollarsString`); display formatting via `src/lib/currency.ts` (`formatMoneyCents`, default **PHP** until settings exist).
 - **Searchable selects:** `src/components/ui/searchable-select.tsx` for consistent category (and future) pickers with search.
-- **New product dialog** ([`ProductCreateDialog`](../../frontend/src/components/catalog/ProductCreateDialog.tsx)): **scrollable** body for many embedded variants — **`max-h-[calc(90vh-11rem)]`** (or similar) + **`overflow-y-auto`** + **`.scrollbar-thin`** so the dialog does not grow past the viewport or collapse to **0** height inside flex (avoid **`flex-1` / `basis-0`** on the scroll child without a cap). **Remove variant:** when **more than one** variant row exists, show a compact **dismiss (X)** on the variant **card** (not only a footer text button).
+- **New product dialog** ([`ProductCreateDialog`](../../frontend/src/components/catalog/ProductCreateDialog.tsx)): **scrollable** body for many embedded variants — **`max-h-[calc(90vh-11rem)]`** (or similar) + **`overflow-y-auto`** + **`.no-scrollbar`** (scroll **without** visible bar; utility in [`index.css`](../../frontend/src/index.css)) so the dialog does not grow past the viewport or collapse to **0** height inside flex (avoid **`flex-1` / `basis-0`** on the scroll child without a cap). **Remove variant:** when **more than one** variant row exists, show a compact **dismiss (X)** on the variant **card** (not only a footer text button).
+- **Destructive actions (list / detail):** Prefer shared [`ConfirmDialog`](../../frontend/src/components/ui/confirm-dialog.tsx) over **`window.confirm`** for **remove category**, **remove product / variant**, etc. (see `BLUEPRINT.md` frontend conventions).
 - **Permissions:** `src/constants/permissions.ts` + `hasPermission`.
 
 ## 5. Acceptance criteria
@@ -57,7 +58,7 @@ Superadmin bypasses checks per `Employee::hasPermission` / `User::hasPermission`
 - `backend/routes/api_v1.php`
 - `backend/app/Support/Permissions.php`
 - `backend/app/Models/Product.php` (cascade soft delete)
-- `frontend/src/App.tsx`
+- `frontend/src/routes/AppRoutes.tsx`
 - `frontend/src/pages/CategoriesPage.tsx`
 - `frontend/src/pages/ProductsPage.tsx`
 - `frontend/src/pages/ProductDetailPage.tsx`

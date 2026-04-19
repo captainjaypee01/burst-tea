@@ -230,7 +230,7 @@ export function OrderComposerPage(): ReactElement {
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <div className="flex min-h-0 flex-1 basis-0 flex-col overflow-hidden lg:flex-row">
         <div className="flex min-h-0 min-w-0 flex-1 basis-0 flex-col overflow-hidden">
-          <div className="scrollbar-thin min-h-0 flex-1 basis-0 touch-pan-y overflow-y-auto overscroll-contain px-6 py-6 lg:px-10 lg:py-8">
+          <div className="no-scrollbar min-h-0 flex-1 basis-0 touch-pan-y overflow-y-auto overscroll-contain px-6 py-6 lg:px-10 lg:py-8">
             <h1 className="font-display text-3xl font-semibold text-secondary-foreground">New Order</h1>
             <p className="mt-1.5 text-sm text-muted-foreground">
               Pick variants on cards, edit lines in the summary, then checkout.{' '}

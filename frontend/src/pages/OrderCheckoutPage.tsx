@@ -4,6 +4,15 @@ import { ArrowLeft, Banknote, Landmark, Smartphone } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import {
   Select,
@@ -12,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { PERMISSIONS } from '@/constants/permissions'
 import { useCashRegisterOptions } from '@/hooks/useCashRegisterOptions'
 import { useOrder } from '@/hooks/useOrder'
@@ -20,6 +30,7 @@ import { cancelOrder } from '@/api/orders'
 import { postPayment } from '@/api/payments'
 import { getApiErrorMessage } from '@/lib/api-client'
 import { formatMoneyCents } from '@/lib/currency'
+import { dollarsToCents } from '@/lib/money'
 import { hasPermission } from '@/lib/hasPermission'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -53,6 +64,10 @@ export function OrderCheckoutPage(): ReactElement {
 
   const [payBusy, setPayBusy] = useState(false)
   const [cancelBusy, setCancelBusy] = useState(false)
+  /** Major units (e.g. PHP) — what the customer hands over; change is derived vs `remainingCents`. */
+  const [cashTenderedInput, setCashTenderedInput] = useState('')
+  const [confirmKind, setConfirmKind] = useState<null | 'cash' | 'maya' | 'gcash'>(null)
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
 
   const remainingCents = useMemo(() => {
     if (!order) {
@@ -61,9 +76,17 @@ export function OrderCheckoutPage(): ReactElement {
     return Math.max(0, order.total_cents - order.amount_paid_cents)
   }, [order])
 
-  const pay = useCallback(
+  const tenderedCents = useMemo(() => dollarsToCents(cashTenderedInput), [cashTenderedInput])
+  const changeCents =
+    tenderedCents !== null && remainingCents > 0 ? Math.max(0, tenderedCents - remainingCents) : null
+  const cashTenderedValid = tenderedCents !== null && tenderedCents >= remainingCents && remainingCents > 0
+
+  const submitPayment = useCallback(
     async (kind: 'cash' | 'maya' | 'gcash') => {
       if (!order || !canPay || remainingCents <= 0) {
+        return
+      }
+      if (kind === 'cash' && !cashTenderedValid) {
         return
       }
       setPayBusy(true)
@@ -84,6 +107,7 @@ export function OrderCheckoutPage(): ReactElement {
             e_wallet_provider: kind === 'maya' ? 'maya' : 'gcash',
           })
         }
+        setConfirmKind(null)
         toast.success('Payment complete')
         await reload()
         navigate(`/orders/${order.id}`, { replace: true })
@@ -93,19 +117,17 @@ export function OrderCheckoutPage(): ReactElement {
         setPayBusy(false)
       }
     },
-    [order, canPay, remainingCents, shift?.id, navigate, reload],
+    [order, canPay, remainingCents, cashTenderedValid, shift?.id, navigate, reload],
   )
 
-  const onCancelOrder = useCallback(async () => {
+  const performCancelOrder = useCallback(async () => {
     if (!order || !canCancelOrder || order.amount_paid_cents > 0 || order.status !== 'open') {
-      return
-    }
-    if (!window.confirm('Cancel this order? You can start a new order from the POS menu.')) {
       return
     }
     setCancelBusy(true)
     try {
       await cancelOrder(order.id)
+      setCancelConfirmOpen(false)
       toast.success('Order cancelled')
       navigate('/pos/new', { replace: true })
     } catch (err) {
@@ -211,9 +233,9 @@ export function OrderCheckoutPage(): ReactElement {
                 variant="outline"
                 className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                 disabled={cancelBusy || payBusy}
-                onClick={() => void onCancelOrder()}
+                onClick={() => setCancelConfirmOpen(true)}
               >
-                {cancelBusy ? 'Cancelling…' : 'Cancel order'}
+                Cancel order
               </Button>
               <p className="text-xs text-muted">Abandon before paying — order is removed from checkout.</p>
             </div>
@@ -254,23 +276,57 @@ export function OrderCheckoutPage(): ReactElement {
               {!shiftLoading && shift === null && canReadRegisters ? (
                 <p className="text-xs text-muted">No open shift for this register — open a shift on shift session.</p>
               ) : null}
-              <div className="grid gap-2 sm:grid-cols-3">
+              <div className="space-y-3 rounded-lg border border-card-border bg-muted/30 p-3">
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Banknote className="size-4 shrink-0" />
+                  Cash
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="cash-tendered" className="text-xs text-muted">
+                    Cash received (customer pays)
+                  </label>
+                  <Input
+                    id="cash-tendered"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    placeholder="0.00"
+                    value={cashTenderedInput}
+                    onChange={(e) => setCashTenderedInput(e.target.value)}
+                    disabled={payBusy || (canReadRegisters && !shift)}
+                    className="tabular-nums"
+                  />
+                  {tenderedCents !== null && remainingCents > 0 ? (
+                    <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
+                      <span className="text-muted">Change to give</span>
+                      <span
+                        className={`tabular-nums font-semibold ${cashTenderedValid ? 'text-foreground' : 'text-muted'}`}
+                      >
+                        {changeCents !== null ? formatMoneyCents(changeCents) : '—'}
+                      </span>
+                    </div>
+                  ) : null}
+                  {tenderedCents !== null && tenderedCents < remainingCents ? (
+                    <p className="text-xs text-amber-800 dark:text-amber-200">Amount is less than the balance due.</p>
+                  ) : null}
+                </div>
                 <Button
                   type="button"
-                  variant="outline"
-                  className="gap-2"
-                  disabled={payBusy || (canReadRegisters && !shift)}
-                  onClick={() => void pay('cash')}
+                  className="w-full gap-2"
+                  disabled={payBusy || (canReadRegisters && !shift) || !cashTenderedValid}
+                  onClick={() => setConfirmKind('cash')}
                 >
                   <Banknote className="size-4" />
-                  Cash
+                  Record cash payment
                 </Button>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-2">
                 <Button
                   type="button"
                   variant="outline"
                   className="gap-2"
                   disabled={payBusy || (canReadRegisters && !shift)}
-                  onClick={() => void pay('maya')}
+                  onClick={() => setConfirmKind('maya')}
                 >
                   <Smartphone className="size-4" />
                   Maya
@@ -280,15 +336,16 @@ export function OrderCheckoutPage(): ReactElement {
                   variant="outline"
                   className="gap-2"
                   disabled={payBusy || (canReadRegisters && !shift)}
-                  onClick={() => void pay('gcash')}
+                  onClick={() => setConfirmKind('gcash')}
                 >
                   <Landmark className="size-4" />
                   GCash
                 </Button>
               </div>
               <p className="text-xs text-muted">
-                Manual recording only — no PSP. Cash and e-wallet sales post to the shift cash ledger when the order is
-                fully paid.
+                Manual recording only — no PSP. For cash, enter what the customer gave; change is for the register. The
+                recorded payment is the amount due only. Cash and e-wallet sales post to the shift cash ledger when the
+                order is fully paid.
               </p>
             </div>
           ) : null}
@@ -296,6 +353,121 @@ export function OrderCheckoutPage(): ReactElement {
           {!canPay ? (
             <p className="text-sm text-muted">You do not have permission to record payments.</p>
           ) : null}
+
+          <Dialog
+            open={confirmKind !== null}
+            onOpenChange={(open) => {
+              if (!open) {
+                setConfirmKind(null)
+              }
+            }}
+          >
+            <DialogContent
+              className="max-w-md"
+              onPointerDownOutside={(e) => {
+                if (payBusy) {
+                  e.preventDefault()
+                }
+              }}
+              onEscapeKeyDown={(e) => {
+                if (payBusy) {
+                  e.preventDefault()
+                }
+              }}
+            >
+              <DialogHeader>
+                <DialogTitle>Confirm payment</DialogTitle>
+                <DialogDescription asChild>
+                  <div className="space-y-4 pt-2 text-start text-foreground">
+                    {order ? (
+                      <>
+                        <p className="text-sm text-muted">
+                          Order <span className="font-medium text-foreground">{order.order_number}</span>
+                        </p>
+                        <dl className="space-y-2 text-sm">
+                          <div className="flex justify-between gap-4">
+                            <dt className="text-muted">Order total</dt>
+                            <dd className="tabular-nums font-medium">{formatMoneyCents(order.total_cents)}</dd>
+                          </div>
+                          <div className="flex justify-between gap-4">
+                            <dt className="text-muted">Already paid</dt>
+                            <dd className="tabular-nums">{formatMoneyCents(order.amount_paid_cents)}</dd>
+                          </div>
+                          <div className="flex justify-between gap-4 border-t border-border pt-2">
+                            <dt className="font-medium text-foreground">Amount due (this payment)</dt>
+                            <dd className="tabular-nums font-semibold text-foreground">
+                              {formatMoneyCents(remainingCents)}
+                            </dd>
+                          </div>
+                        </dl>
+                        {confirmKind === 'cash' && tenderedCents !== null ? (
+                          <div className="rounded-lg border border-card-border bg-muted/40 p-3 text-sm">
+                            <div className="flex justify-between gap-4">
+                              <span className="text-muted">Cash received</span>
+                              <span className="tabular-nums font-medium">{formatMoneyCents(tenderedCents)}</span>
+                            </div>
+                            {changeCents !== null ? (
+                              <div className="mt-2 flex justify-between gap-4">
+                                <span className="text-muted">Change to give</span>
+                                <span className="tabular-nums font-medium">{formatMoneyCents(changeCents)}</span>
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : null}
+                        {confirmKind === 'maya' || confirmKind === 'gcash' ? (
+                          <p className="text-sm text-muted">
+                            You are recording a manual <strong className="text-foreground">e-wallet</strong> transfer
+                            ({confirmKind === 'maya' ? 'Maya' : 'GCash'}) for{' '}
+                            <span className="tabular-nums font-medium text-foreground">
+                              {formatMoneyCents(remainingCents)}
+                            </span>
+                            . No online payment will be processed.
+                          </p>
+                        ) : null}
+                      </>
+                    ) : null}
+                  </div>
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={payBusy}
+                  onClick={() => setConfirmKind(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  disabled={
+                    payBusy ||
+                    confirmKind === null ||
+                    (confirmKind === 'cash' && !cashTenderedValid)
+                  }
+                  onClick={() => {
+                    if (confirmKind !== null) {
+                      void submitPayment(confirmKind)
+                    }
+                  }}
+                >
+                  {payBusy ? 'Recording…' : 'Confirm payment'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <ConfirmDialog
+            open={cancelConfirmOpen}
+            onOpenChange={setCancelConfirmOpen}
+            title="Cancel this order?"
+            description="You can start a new order from the POS menu."
+            confirmLabel="Cancel order"
+            cancelLabel="Keep order"
+            confirmVariant="destructive"
+            pending={cancelBusy}
+            onConfirm={performCancelOrder}
+          />
         </>
       ) : null}
     </div>

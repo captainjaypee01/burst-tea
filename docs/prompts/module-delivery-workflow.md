@@ -18,8 +18,8 @@ The **POS** slice is **shipped** in the SPA; use [`docs/modules/ordering.md`](..
 | Area | Intent |
 |------|--------|
 | **Orders** | Create/edit orders; **list** = **DataTableServer** on `/orders` — separate from **`/pos/...`** composer. |
-| **Composer UI** | **§4.1** — category tabs, **card grid**, **variants on each card**, **order summary** (desktop) + **Sheet** cart (mobile), **per-line notes**. **Scroll:** desktop POS uses **bounded flex** + **`overflow-y-auto`** / **`.scrollbar-thin`** for menu and cart lines (see `BLUEPRINT.md` changelog **2026-04-18**). |
-| **Checkout page** | **§4.4** — **`/pos/:orderId/checkout`**; **Pay** **Cash** / **Maya** / **GCash** (manual); post-pay toast **“Payment complete”** → **`/orders/:orderId`**. |
+| **Composer UI** | **§4.1** — category tabs, **card grid**, **variants on each card**, **order summary** (desktop) + **Sheet** cart (mobile), **per-line notes**. **Scroll:** **product menu** uses **`.no-scrollbar`**; cart line list may use **`.scrollbar-thin`** (see `BLUEPRINT.md` **2026-04-19**). |
+| **Checkout page** | **§4.4** — **`/pos/:orderId/checkout`**; **Pay** **Cash** (tendered + change) / **Maya** / **GCash** (manual); **`Dialog`** confirms totals / due / tendered before **`POST /payments`**; **`ConfirmDialog`** for cancel order (not **`window.confirm`**); post-pay toast **“Payment complete”** → **`/orders/:orderId`**. |
 | **Line items** | **Product variants**; qty/notes in cart; API `PATCH`/`DELETE` items as per backend. |
 | **Payments / shifts** | **`shift_id`** when required; cash ledger **`sale`** rows per `BLUEPRINT.md` + [`shifts-and-session.md`](../../docs/modules/shifts-and-session.md). |
 

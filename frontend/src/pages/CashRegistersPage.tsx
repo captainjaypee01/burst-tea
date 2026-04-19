@@ -1,4 +1,4 @@
-import { type FormEvent, type ReactElement, useMemo, useState } from 'react'
+import { type FormEvent, type ReactElement, useCallback, useMemo, useState } from 'react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { BookOpen, Landmark, Pencil } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 import { createCashRegister, deactivateCashRegister, updateCashRegister } from '@/api/cash-registers'
 import { DataTableServer } from '@/components/DataTableServer'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
   Dialog,
   DialogContent,
@@ -49,6 +50,7 @@ export function CashRegistersPage(): ReactElement {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<CashRegister | null>(null)
   const [editName, setEditName] = useState('')
+  const [deactivateTarget, setDeactivateTarget] = useState<CashRegister | null>(null)
 
   const openEdit = (row: CashRegister): void => {
     setEditing(row)
@@ -97,18 +99,19 @@ export function CashRegistersPage(): ReactElement {
     }
   }
 
-  const onDeactivate = async (row: CashRegister): Promise<void> => {
-    if (!window.confirm(`Deactivate “${row.name}”? It will be hidden from shift register lists until re-activated.`)) {
+  const performDeactivate = useCallback(async () => {
+    if (!deactivateTarget) {
       return
     }
     setSaving(true)
     try {
-      await deactivateCashRegister(row.id)
+      await deactivateCashRegister(deactivateTarget.id)
+      setDeactivateTarget(null)
       await reload()
     } finally {
       setSaving(false)
     }
-  }
+  }, [deactivateTarget, reload])
 
   const onActivate = async (row: CashRegister): Promise<void> => {
     setSaving(true)
@@ -160,7 +163,7 @@ export function CashRegistersPage(): ReactElement {
                       size="sm"
                       className="border-red-200 text-red-800 hover:bg-red-50"
                       disabled={saving}
-                      onClick={() => void onDeactivate(r)}
+                      onClick={() => setDeactivateTarget(r)}
                     >
                       Deactivate
                     </Button>
@@ -278,6 +281,22 @@ export function CashRegistersPage(): ReactElement {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={deactivateTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeactivateTarget(null)
+          }
+        }}
+        title={deactivateTarget ? `Deactivate “${deactivateTarget.name}”?` : 'Deactivate register?'}
+        description="It will be hidden from shift register lists until re-activated."
+        confirmLabel="Deactivate"
+        cancelLabel="Keep active"
+        confirmVariant="destructive"
+        pending={saving && deactivateTarget !== null}
+        onConfirm={performDeactivate}
+      />
     </div>
   )
 }

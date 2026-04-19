@@ -184,7 +184,7 @@ export function ProductCreateDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="scrollbar-thin max-h-[calc(90vh-11rem)] min-h-0 overflow-y-auto overflow-x-hidden px-6 py-4 pr-8">
+          <div className="no-scrollbar max-h-[calc(90vh-11rem)] min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-6 py-4 pr-8">
             <div className="grid gap-4">
             {error ? (
               <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">

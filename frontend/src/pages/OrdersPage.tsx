@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 
 import { DataTableServer } from '@/components/DataTableServer'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { cancelOrder } from '@/api/orders'
 import { PERMISSIONS } from '@/constants/permissions'
 import { useOrders } from '@/hooks/useOrders'
@@ -25,28 +26,24 @@ export function OrdersPage(): ReactElement {
 
   const { setPage, data, meta, loading, error, reload } = useOrders()
   const [cancellingId, setCancellingId] = useState<number | null>(null)
+  const [cancelTarget, setCancelTarget] = useState<Order | null>(null)
 
-  const onCancelOrder = useCallback(
-    async (order: Order) => {
-      if (!canCancel || order.status !== 'open' || order.amount_paid_cents > 0) {
-        return
-      }
-      if (!window.confirm(`Cancel order ${order.order_number}? This cannot be undone.`)) {
-        return
-      }
-      setCancellingId(order.id)
-      try {
-        await cancelOrder(order.id)
-        toast.success('Order cancelled')
-        await reload()
-      } catch (err) {
-        toast.error(getApiErrorMessage(err))
-      } finally {
-        setCancellingId(null)
-      }
-    },
-    [canCancel, reload],
-  )
+  const performCancelOrder = useCallback(async () => {
+    if (!cancelTarget || !canCancel || cancelTarget.status !== 'open' || cancelTarget.amount_paid_cents > 0) {
+      return
+    }
+    setCancellingId(cancelTarget.id)
+    try {
+      await cancelOrder(cancelTarget.id)
+      setCancelTarget(null)
+      toast.success('Order cancelled')
+      await reload()
+    } catch (err) {
+      toast.error(getApiErrorMessage(err))
+    } finally {
+      setCancellingId(null)
+    }
+  }, [canCancel, cancelTarget, reload])
 
   const columns = useMemo<ColumnDef<Order, unknown>[]>(
     () => [
@@ -103,7 +100,7 @@ export function OrdersPage(): ReactElement {
                   size="sm"
                   className="h-8 gap-1.5 border-destructive/30 px-3 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
                   disabled={cancellingId === o.id}
-                  onClick={() => void onCancelOrder(o)}
+                  onClick={() => setCancelTarget(o)}
                 >
                   <Trash2 className="size-3.5 shrink-0" aria-hidden />
                   {cancellingId === o.id ? '…' : 'Cancel'}
@@ -120,7 +117,7 @@ export function OrdersPage(): ReactElement {
         },
       },
     ],
-    [canCancel, cancellingId, onCancelOrder],
+    [canCancel, cancellingId],
   )
 
   return (
@@ -152,6 +149,22 @@ export function OrdersPage(): ReactElement {
         meta={meta}
         isLoading={loading}
         onPageChange={(next) => setPage(next)}
+      />
+
+      <ConfirmDialog
+        open={cancelTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCancelTarget(null)
+          }
+        }}
+        title={cancelTarget ? `Cancel order ${cancelTarget.order_number}?` : 'Cancel order?'}
+        description="This cannot be undone."
+        confirmLabel="Cancel order"
+        cancelLabel="Keep order"
+        confirmVariant="destructive"
+        pending={cancelTarget !== null && cancellingId === cancelTarget.id}
+        onConfirm={performCancelOrder}
       />
     </div>
   )

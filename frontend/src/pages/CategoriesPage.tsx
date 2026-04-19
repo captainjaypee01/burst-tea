@@ -6,6 +6,7 @@ import { FolderTree } from 'lucide-react'
 import { createCategory, deleteCategory, updateCategory } from '@/api/categories'
 import { DataTableServer } from '@/components/DataTableServer'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
   Dialog,
   DialogContent,
@@ -41,6 +42,8 @@ export function CategoriesPage(): ReactElement {
   const [isActive, setIsActive] = useState(true)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Category | null>(null)
+  const [deleteBusy, setDeleteBusy] = useState(false)
 
   const openCreate = (): void => {
     setEditing(null)
@@ -95,17 +98,21 @@ export function CategoriesPage(): ReactElement {
     }
   }
 
-  const handleDelete = useCallback(async (row: Category): Promise<void> => {
-    if (!window.confirm(`Remove category “${row.name}”? It will be archived (soft-deleted).`)) {
+  const performDelete = useCallback(async (): Promise<void> => {
+    if (!deleteTarget) {
       return
     }
+    setDeleteBusy(true)
     try {
-      await deleteCategory(row.id)
+      await deleteCategory(deleteTarget.id)
+      setDeleteTarget(null)
       await reload()
     } catch (err) {
       toast.error(getApiErrorMessage(err))
+    } finally {
+      setDeleteBusy(false)
     }
-  }, [reload])
+  }, [deleteTarget, reload])
 
   const columns = useMemo<ColumnDef<Category, unknown>[]>(
     () => [
@@ -147,7 +154,7 @@ export function CategoriesPage(): ReactElement {
                 variant="outline"
                 size="sm"
                 className="border-red-200 text-red-800 hover:bg-red-50"
-                onClick={() => void handleDelete(row.original)}
+                onClick={() => setDeleteTarget(row.original)}
               >
                 Remove
               </Button>
@@ -156,7 +163,7 @@ export function CategoriesPage(): ReactElement {
         ),
       },
     ],
-    [canDelete, canUpdate, handleDelete],
+    [canDelete, canUpdate],
   )
 
   if (!canRead) {
@@ -257,6 +264,22 @@ export function CategoriesPage(): ReactElement {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null)
+          }
+        }}
+        title={deleteTarget ? `Remove category “${deleteTarget.name}”?` : 'Remove category?'}
+        description="It will be archived (soft-deleted)."
+        confirmLabel="Remove"
+        cancelLabel="Keep"
+        confirmVariant="destructive"
+        pending={deleteBusy}
+        onConfirm={performDelete}
+      />
     </div>
   )
 }
